@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Terminal Hacker</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: black url('hacker_background.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #00ff00;
+      font-family: monospace;
+      overflow: hidden;
+    }
+    .marco {
+      border: 3px solid #00ff00;
+      padding: 20px;
+      margin: 20px;
+      height: 90vh;
+      overflow-y: auto;
+      background-color: rgba(0, 0, 0, 0.85);
+      display: none; /* Ocultar al inicio */
+    }
+    #terminal {
+      white-space: pre-wrap;
+      min-height: 80vh;
+    }
+    #input {
+      display: inline;
+    }
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      animation: blink 1s step-start infinite;
+    }
+    @keyframes blink {
+      50% {
+        background: transparent;
+      }
+      0%, 100% {
+        background: #00ff00;
+      }
+    }
+    /* Pantalla de inicio */
+    #startup-screen {
+      background: black;
+      color: #00ff00;
+      font-family: monospace;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: fixed;
+      top: 0; left: 0; width: 100vw;
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2em;
+      cursor: pointer;
+      user-select: none;
+    }
+    #blinking-dots {
+      animation: blink-dots 1.5s step-end infinite;
+    }
+    @keyframes blink-dots {
+      50% {
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="startup-screen">
+    Hacker Terminal<span id="blinking-dots">...</span>
+  </div>
+
+  <div class="marco" id="main-terminal">
+    <div id="terminal">
+      Bienvenido a la terminal hacker<br />
+      <span id="salida"></span><br />
+      <span id="input-line">&gt; <span id="input"></span><span class="cursor"></span></span>
+    </div>
+  </div>
+
+  <script>
+    const startupScreen = document.getElementById("startup-screen");
+    const mainTerminal = document.getElementById("main-terminal");
+    const terminal = document.getElementById("salida");
+    const input = document.getElementById("input");
+    const blinkingDots = document.getElementById("blinking-dots");
+
+    let comando = "";
+    let bcueInterval = null;
+
+    // Archivos y carpetas para dir_s
+    const archivos = [
+      "hack.exe",
+      "logs.db",
+      "network_keys.key",
+      "notes.txt",
+      "config/",
+      "backup/",
+      "secret_docs/"
+    ];
+
+    // Cosas raras para el bcue
+    const cosasSimbolos = [
+      "▲▼▲▼▲▼▲▼▲▼",
+      "▂▃▄▅▆▇█▇▆▅▄▃▂",
+      "¿?¿?¿?¿?¿?¿?",
+      "▓▒░▒▓▒░▒▓▒░▒",
+      "~!@#$%^&*()_+{}|:\\\"<>?",
+      "ΦΨΩΔΣΛΞΠ",
+      "☢ ☣ ☠ ☮ ☯ ☢ ☣",
+      "1010101010101010",
+      "░▒▓█▓▒░",
+      "¤¢£¥€¤¢£¥€",
+      "≡≡≡≡≡≡≡≡≡≡",
+      "⌘⌥⌫⌦⇧⌃⌥"
+    ];
+
+    const frasesMysticas = [
+      "Acceso concedido... casi.",
+      "El sistema está observando...",
+      "ERROR 0xDEADBEEF: ¿Qué es la realidad?",
+      "El firewall detecta una presencia...",
+      "Buscando puerta trasera oculta...",
+      "Archivo corrupto detectado, ignorando.",
+      "Procesando datos extraños... ¿alguien allí?",
+      "Carga completa, pero sin conexión.",
+      "Intentando descifrar claves antiguas...",
+      "Se ha perdido el paquete de datos #42.",
+      "Escaneo completo, nada sospechoso.",
+      "El servidor está durmiendo... Shh."
+    ];
+
+    function generarBinarios(longitud = 16) {
+      let resultado = "";
+      for (let i = 0; i < longitud; i++) {
+        resultado += Math.random() > 0.5 ? "1" : "0";
+      }
+      return resultado;
+    }
+
+    const frasesHackeoFalso = [
+      ">> root@system:~# ls -la",
+      "drwxr-xr-x  10 root root 4096 May 18 20:00 .",
+      "-rw-r--r--   1 root root 2048 May 18 20:00 secrets.txt",
+      ">> cat secrets.txt",
+      "Access granted to confidential files.",
+      ">> sudo rm -rf /tmp/*",
+      "Temporary files cleared.",
+      ">> nmap -sS 192.168.1.0/24",
+      "Scanning network... 192.168.1.15 open ssh",
+      ">> echo 'Hackeo simulado completo.'"
+    ];
+
+    function textoAleatorioBucle() {
+      const tipo = Math.floor(Math.random() * 4);
+      switch (tipo) {
+        case 0:
+          return cosasSimbolos[Math.floor(Math.random() * cosasSimbolos.length)];
+        case 1:
+          return frasesMysticas[Math.floor(Math.random() * frasesMysticas.length)];
+        case 2:
+          return generarBinarios(24);
+        case 3:
+          return frasesHackeoFalso[Math.floor(Math.random() * frasesHackeoFalso.length)];
+        default:
+          return "??";
+      }
+    }
+
+    function escribirLinea(texto, velocidad = 20, callback = null) {
+      let i = 0;
+      const intervalo = setInterval(() => {
+        terminal.innerHTML += texto[i];
+        i++;
+        if (i >= texto.length) {
+          clearInterval(intervalo);
+          terminal.innerHTML += "\n";
+          mainTerminal.scrollTop = mainTerminal.scrollHeight;
+          if (callback) callback();
+        }
+      }, velocidad);
+    }
+
+    function outputResultado(cmd) {
+      if (bcueInterval && cmd.toLowerCase() !== "stop") {
+        escribirLinea("Error: bcue está activo. Usa 'stop' para detenerlo.", 20);
+        return;
+      }
+      switch (cmd.toLowerCase()) {
+        case "dir_s":
+          escribirLinea("Archivos y carpetas:\n - " + archivos.join("\n - "), 20);
+          break;
+        case "scan":
+          escribirLinea("Detectado:\n - 192.168.1.3\n - 10.0.0.8\n - 172.16.0.2", 20);
+          break;
+        case "get passwd":
+          escribirLinea("passwd.txt:\n - root:toor123\n - admin:admin2025\n - guest:qwerty", 20);
+          break;
+        case "whoami":
+          escribirLinea("Usuario: infiltrador_root", 20);
+          break;
+        case "ls":
+          escribirLinea("Archivos:\n - hack.exe\n - logs.db\n - network_keys.key\n - notes.txt", 20);
+          break;
+        case "connect":
+          escribirLinea("Conectando a 10.0.0.8... [Éxito]", 20);
+          break;
+        case "unlock":
+          escribirLinea(
+            `Desbloqueo exitoso...
+IPv6: fe80::a8bb:ccff:fe00:1122
+Contraseñas encontradas:
+ - admin:lethalpass900
+ - camara_ext:liveview123
+ - safe_hall:1987vault!
+Códigos de cajas fuertes:
+ - Zona A: 4032
+ - Zona B: 9910
+Alarmas activas:
+ - Casa 1: Desactivada (puerta trasera)
+ - Casa 2: Activada (sensor de movimiento)
+Archivos secretos:
+ - /system/intel/maps/top_secret.jpg
+ - /confidential/memo2025.txt`, 20);
+          break;
+        case "shutdown":
+          escribirLinea("Cerrando sesión...", 30, () => {
+            escribirLinea("Cortando comunicaciones...", 30, () => {
+              escribirLinea("Desconectando el sistema...", 30, () => {
+                mainTerminal.style.display = "none";
+                startupScreen.style.display = "flex";
+              });
+            });
+          });
+          break;
+        case "bcue":
+          if (bcueInterval) {
+            escribirLinea("bcue ya está activo. Usa 'stop' para detenerlo.", 20);
+            break;
+          }
+          escribirLinea("Iniciando bcue... cosas raras en bucle", 20, () => {
+            bcueInterval = setInterval(() => {
+              terminal.innerHTML += textoAleatorioBucle() + "\n";
+              mainTerminal.scrollTop = mainTerminal.scrollHeight;
+            }, 700);
+          });
+          break;
+        case "stop":
+          if (bcueInterval) {
+            clearInterval(bcueInterval);
+            bcueInterval = null;
+            escribirLinea("bcue detenido.", 20);
+          } else {
+            escribirLinea("No hay bcue activo.", 20);
+          }
+          break;
+        case "start":
+          // Este caso ahora se maneja al hacer clic en la pantalla de inicio
+          escribirLinea("El sistema ya está activo.", 20);
+          break;
+        case "help":
+          escribirLinea("Comandos disponibles:\n - dir_s\n - scan\n - get passwd\n - whoami\n - ls\n - connect\n - unlock\n - shutdown\n - bcue\n - stop\n - start\n - help\n - clear\n - sysinfo\n - backdoor\n - hack gordo", 20);
+          break;
+        case "clear":
+          terminal.innerHTML = "";
+          escribirLinea("Bienvenido a la terminal hacker<br />", 0); // Para mantener el encabezado
+          break;
+        case "sysinfo":
+          escribirLinea("Información del sistema:\n - Kernel: Linux 5.10.0-kali7-amd64\n - Shell: bash 5.1.4(1)-release\n - Usuario actual: infiltrador_root\n - Arquitectura: x86_64", 20);
+          break;
+        case "backdoor":
+          escribirLinea("Intentando conexión a backdoor... [Éxito]\nAcceso remoto concedido.", 20);
+          break;
+        case "hack gordo":
+          escribirLinea("Iniciando descarga de 'hack gordo'...", 50, () => {
+            const link = document.createElement('a');
+            link.href = 'https://tr.rbxcdn.com/30DAY-Avatar-7C39E9F97AD631064948F8F16D350453-Png/352/352/Avatar/Webp/noFilter';
+            link.download = 'hack_gordo.png'; // Sugerir nombre de archivo
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            escribirLinea("Descarga completada (puede que necesites confirmar en tu navegador).", 50);
+          });
+          break;
+        case "codigosecreto":
+          escribirLinea("Redirigiendo a misión secreta...", 100, () => {
+            window.location.href = "mision2.html";
+          });
+          break;
+        default:
+          escribirLinea(`Comando no reconocido: ${cmd}`, 20);
+      }
+    }
+    function iniciarTerminal() {
+      startupScreen.style.display = "none";
+      mainTerminal.style.display = "block";
+      escribirLinea("Bienvenido a la terminal hacker", 0);
+    }
+
+    // Evento para activar la terminal al hacer clic en la pantalla de inicio
+    startupScreen.addEventListener("click", () => {
+      const comandoInicio = prompt("Introduce el comando para iniciar:");
+      if (comandoInicio && comandoInicio.toLowerCase() === "start") {
+        iniciarTerminal();
+      } else if (comandoInicio) {
+        alert(`Comando incorrecto: ${comandoInicio}. Intenta de nuevo.`);
+      }
+    });
+
+    // Entrada de teclado para comandos (solo activa si la terminal está visible)
+    document.addEventListener("keydown", (e) => {
+      if (mainTerminal.style.display === "none") return; // No escribir si está oculta
+
+      if (e.key === "Backspace") {
+        comando = comando.slice(0, -1);
+      } else if (e.key === "Enter") {
+        terminal.innerHTML += "\n> " + comando + "\n";
+        outputResultado(comando.trim());
+        comando = "";
+      } else if (e.key.length === 1) {
+        comando += e.key;
+      }
+
+      input.textContent = comando;
+      mainTerminal.scrollTop = mainTerminal.scrollHeight;
+      e.preventDefault();
+    });
+
+    // Inicio mostrando la pantalla de carga
+    mainTerminal.style.display = "none";
+    startupScreen.style.display = "flex";
+
+  </script>
+</body>
+</html>

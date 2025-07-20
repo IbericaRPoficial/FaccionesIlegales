@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minijuego Hacking - Misión Anoninxrp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #chat-container {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            line-height: 1.2;
+            width: 300px;
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        #chat-container p {
+            margin: 5px 0;
+        }
+
+        .anoninxrp-nombre {
+            color: blue;
+            font-weight: bold;
+        }
+
+        .anoninxrp-mensaje {
+            color: red;
+        }
+
+        .terminal {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+            height: 300px;
+            overflow-y: auto;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            position: relative;
+        }
+
+        .terminal p {
+            margin: 5px 0;
+        }
+
+        #command-input {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #00ff00;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .output {
+            color: #ddd;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        .success-screen, .fake-success-screen, .red-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #121212;
+            color: #00ff00;
+            font-size: 1.5em;
+            display: none;
+            z-index: 9999;
+            padding: 50px;
+            text-align: center;
+            white-space: pre-wrap;
+        }
+
+        .fake-success-screen p {
+            color: #fff;
+            line-height: 1.4;
+        }
+
+        .warning {
+            color: yellow;
+            font-weight: bold;
+            animation: blink 1s step-end infinite;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        @keyframes blink {
+            50% {
+                visibility: hidden;
+            }
+        }
+
+        /* Red screen style */
+        .red-screen {
+            background-color: red;
+            color: black;
+            font-size: 1.2em;
+            font-weight: bold;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+
+        .red-screen p {
+            margin-top: 20px;
+            font-size: 1em;
+            animation: blink 1.5s step-end infinite;
+            line-height: 1.4;
+        }
+
+        /* Button style for VPN */
+        #vpn-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 3px 7px;
+            background-color: #444;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        #vpn-button.hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <p><span class="anoninxrp-nombre">Iniciando Chat con Anoninxrp</span> <span class="anoninxrp-mensaje"></span></p>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <p></p>
+        <p id="inicializado" style="display: none;"></p>
+    </div>
+
+    <input type="text" id="command-input" placeholder="Introduce el comando aquí..." disabled>
+
+    <button id="vpn-button">VPN</button>
+
+    <div class="success-screen" id="success-screen">
+        <p>✅ <strong>¡Hackeo exitoso!</strong> ✅<br><br>
+        Has accedido con éxito al sistema del almacén. <br>
+        ¡Tu misión ha sido completada! 🎉
+    </div>
+
+    <div class="fake-success-screen" id="fake-success-screen">
+        <p>✅ <strong>¡Hackeo exitoso!</strong> ✅<br><br>
+        Has accedido con éxito al sistema del almacén. <br>
+        Pero algo salió mal... ⚠️<br><br>
+        <span class="warning">⚠️ Se te olvidó conectar la VPN, mira lo que se te ha descargado ⚠️</span>
+    </div>
+
+    <div class="red-screen" id="red-screen">
+        <p>‼️ <strong>INTENTO FALLIDO. HAS SIDO DESCUBIERTO.</strong> ‼️<br><br>
+        ❌ ¡¡TE ESTAMOS VIGILANDO!! ❌<br>
+        💀 ¡TODO ESTÁ REGISTRADO! 💀<br><br>
+        📍 ¡NO PUEDES ESCAPAR DE NOSOTROS! 📍<br>
+        ⚠️ ¡Tu ubicación está siendo rastreada! ⚠️<br>
+        ⚡ ¡Te tenemos en la mira! ⚡<br>
+        ❌ ¡Lo has intentado! Te hemos pillado… ¡ahora vas a pagar las consecuencias! ❌<br>
+        🔴 Si decides separarte del ordenador y arrodillarte frente a la puerta de tu casa, tus compañeros estarán a salvo. Sólo tú serás el objetivo. <br>
+        ⚡ Te toca decidir: ¿Arriesgas tu vida por ellos? ¿Realmente vale la pena lo que haces por tu familia, o estás dispuesto a sacrificar todo por ellos? ⚡<br>
+        🏃‍♂️ La decisión está en tus manos. ¡Haz lo que creas correcto! ¡Hazlo rápido! 🏃‍♂️<br>
+        🙉 Recuerda, te escuchamos. No digas cosas que no debas, o sabrás lo que pasará 🙉 <br><br>
+        </p>
+    </div>
+    <script>
+        const terminal = document.getElementById('terminal');
+        const inicializadoText = document.getElementById('inicializado');
+        const commandInput = document.getElementById('command-input');
+        const successScreen = document.getElementById('success-screen');
+        const fakeSuccessScreen = document.getElementById('fake-success-screen');
+        const redScreen = document.getElementById('red-screen');
+        const chatContainer = document.getElementById('chat-container');
+        const chatMessage = chatContainer.querySelector('.anoninxrp-mensaje');
+        const terminalInitialText = terminal.querySelector('p');
+        const vpnButton = document.getElementById('vpn-button');
+
+        let step = 0;
+        const maxAttempts = 3;
+        let attempts = [0, 0, 0, 0, 0, 0]; // Contador de intentos por paso
+        let vpnActivated = false;
+        let missionCompleted = false;
+        let vpnButtonVisible = true;
+
+        function typeText(text, targetElement) {
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < text.length) {
+                    targetElement.innerHTML += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 30);
+        }
+
+        function outputToTerminal(message, className = '') {
+            const p = document.createElement('p');
+            p.className = className;
+            terminal.appendChild(p);
+            typeText(message, p);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function updateChat(newMessage) {
+            const p = document.createElement('p');
+            const nombreSpan = document.createElement('span');
+            nombreSpan.className = 'anoninxrp-nombre';
+            nombreSpan.textContent = 'Anoninxrp: ';
+            const mensajeSpan = document.createElement('span');
+            mensajeSpan.className = 'anoninxrp-mensaje';
+            p.appendChild(nombreSpan);
+            p.appendChild(mensajeSpan);
+            chatContainer.appendChild(p);
+            typeText(newMessage, mensajeSpan);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        commandInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter' && !missionCompleted) {
+                const command = commandInput.value.trim();
+                commandInput.value = '';
+                processCommand(command);
+            }
+        });
+
+        vpnButton.addEventListener('click', () => {
+            if (vpnButtonVisible) {
+                vpnActivated = true;
+                vpnButton.classList.add('hidden');
+                outputToTerminal('VPN activada.', 'success');
+            }
+        });
+
+        setTimeout(() => {
+            typeText("Iniciando sistema...", terminalInitialText);
+            setTimeout(() => {
+                updateChat("\"Hoy te acompañaré en esta misión sigue mis pasos y todo irá bien. Ejecuta -manual cuando quieras consultar la guía.\"");
+                updateChat("\"Tendrás que conectarte a la Torre Telefónica que está aqui cerca a 3km en High Rock con el comando -connect\"");
+        outputToTerminal ("¡Sistema inicializado!🖥️");
+                commandInput.disabled = false;
+            }, 2000);
+        }, 1000);
+        function checkFailure() {
+            if (attempts.some(count => count >= maxAttempts)) {
+                redScreen.style.display = 'block';
+                commandInput.disabled = true;
+                missionCompleted = true;
+                if (vpnButtonVisible) {
+                    vpnButton.classList.add('hidden');
+                    vpnButtonVisible = false;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        function generateRandomIP() {
+            return `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+        }
+
+        function createTxtFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        function downloadMap() {
+            const link = document.createElement('a');
+            link.href = 'https://drive.google.com/uc?id=1safxGNj_umh5UsbddImEWNWipxGO2ep2&export=download';
+            link.download = 'mapa_satelital.jpg'; // Puedes cambiar el nombre del archivo si lo deseas
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link); // Limpiar el elemento <a> después de la descarga
+        }
+        function downloadManual() {
+            const link1 = document.createElement('a');
+            link1.href = 'https://drive.google.com/uc?export=download&id=1-S55zT5DzkzrZjwuOJlnx1wmFbqktVUK';
+            link1.download ="manual.pdf"; // Puedes cambiar el nombre del archivo si lo deseas
+            document.body.appendChild(link1);
+            link1.click();
+            document.body.removeChild(link1); // Limpiar el elemento <a> después de la descarga
+        }
+
+        function processCommand(command) {
+            if (checkFailure()) return;
+
+            if (command === '-help') {
+                const helpContent = "Escribe al dm a puutoara/mar9546F\n\n" +
+                                    "Lista de comandos:\n" +
+                                    "1. -manual\n" +
+                                    "2. -connect /nr \"tftower\" -rd --3km\n" +
+                                    "3. -connect /nr \"speedcamara\" -rd --10km\n" +
+                                    "4. -connect /nr \"tftower\" -rd --6km\n" +
+                                    "5. -nmap {904,905,906,907}\n" +
+                                    "6. -focus \"house\" --9041\n" +
+                                    "7. -bypass \"alarm\"\n" +
+                                    "-ipconfig: Muestra la configuración IP del dispositivo objetivo.\n";
+                createTxtFile(helpContent, 'AYUDA.txt');
+                outputToTerminal('Ayuda mandada, mira lo descargado', 'success');
+                return;
+            }
+            if (command === '-manual') {
+                downloadManual();
+                outputToTerminal('Manual del hacker descargado.');
+                return;
+            }
+
+            if (command === '-ipconfig') {
+                outputToTerminal('alarm9041 --> 3de0:8d2e:48:4f:d678:92:51a:4');
+                return;
+            }
+
+            switch (step) {
+                case 0:
+                    if (command === '-connect /nr "tftower" -rd --3km') {
+                        outputToTerminal('Comando output en la consola ficticia hacker "Conectando a Torre Telefonica de High Rock....."');
+                        setTimeout(() => {
+                            const password = prompt('Introduce la contraseña para la Torre Telefonica de High Rock:');
+                            if (password === 'hola') {
+                                outputToTerminal('Conexión establecida a la Torre Telefonica de High Rock 🔌', 'success');
+                                step++;
+                                attempts[step] = 0; // Reset attempts for the next step
+                            } else {
+                                outputToTerminal('Acceso denegado. Vuelve a intentarlo.', 'error');
+                                attempts[step]++;
+                                checkFailure();
+                            }
+                        }, 3000);
+                    } else {
+                        outputToTerminal('Comando incorrecto. Intenta de nuevo.', 'error');
+                        attempts[step]++;
+                        checkFailure();
+                    }
+                    break;
+
+                case 1:
+                    if (command === '-connect /nr "speedcamara" -rd --10km') {
+                        outputToTerminal('Comando output "Conectando a radar de tráfico de autopista. *Seguridad baja*"');
+                        setTimeout(() => {
+                            const answer = prompt('Responda a esta pregunta para conectarse: Un granjero tiene 17 ovejas. Todas menos nueve se escapan. ¿Cuántas ovejas le quedan al granjero?');
+                            if (answer === '9') {
+                                outputToTerminal('Conexion establecida al radar de trafico de autopista', 'success');
+                                updateChat("\"Si haces esta conexion a la Torre Telefonica del lago que está cerca a unos 6km, empezaremos a abrir casas y desconectar todo. Vamos ahí duro!!!\"");
+                                step++;
+                                attempts[step] = 0;
+                                if (step === 2 && vpnButtonVisible) {
+                                    vpnButton.classList.add('hidden');
+                                    vpnButtonVisible = false;
+                                }
+                            } else {
+                                outputToTerminal('Respuesta incorrecta. Vuelve a intentarlo.', 'error');
+                                attempts[step]++;
+                                checkFailure();
+                            }
+                        }, 3000);
+                    } else {
+                        outputToTerminal('Comando incorrecto. Intenta de nuevo.', 'error');
+                        attempts[step]++;
+                        checkFailure();
+                    }
+                    break;
+
+                case 2:
+                    if (command === '-connect /nr "tftower" -rd --6km') {
+                        outputToTerminal('Comando output "Conectando a la Torre Telefónica del Lago...."');
+                        setTimeout(() => {
+                            const answer = prompt('Responde a esta pregunta: Si un pato pone un huevo cada día, ¿cuántos huevos pondrán seis patos en una semana?.');
+                            if (answer === '42') {
+                                outputToTerminal('Conexión establecida a la Torre Telefónica del Lago', 'success');
+                                updateChat("\"Perfecto, no nos relajemos, ahora empieza lo bueno. Necesito tu concentración al máximo. Te ayudaré pon el comando -nmap {y los 4 codigos postales con comas de menor a mayor de la zona de asalto} [Ejemplo: -nmap {102,145,206,207}. Con esto conseguiras una imagen muy preciada para los siguientes pasos.\"");
+                                step++;
+                                attempts[step] = 0;
+                                if (step === 3 && vpnButtonVisible) {
+                                    vpnButton.classList.add('hidden');
+                                    vpnButtonVisible = false;
+                                }
+                            } else {
+                                outputToTerminal('Respuesta incorrecta. Vuelve a intentarlo.', 'error');
+                                attempts[step]++;
+                                checkFailure();
+                            }
+                        }, 3000);
+                    } else {
+                        outputToTerminal('Comando incorrecto. Intenta de nuevo.', 'error');
+                        attempts[step]++;
+                        checkFailure();
+                    }
+                    break;
+
+                case 3:
+                    if (command === '-nmap {904,905,906,907}') {
+                        outputToTerminal('Ejecutando escaneo de mapa satelital...');
+                        downloadMap(); // Ejecutar la descarga del archivo
+                        setTimeout(() => {
+                            outputToTerminal('Mapa satelital de la zona obtenido.', 'success');
+                            updateChat("\"Con el mapa satelital de la zona tendremos ventaja. Puedes observar arriba que hay una torre en gris, esa es con la cual has establecido conexión. Ahora tendrás que ir casa por casa, desactivando y mirando si hay gente, si hay trampas, etc. En esta parte es muy importante la coordinación con tus compañeros. Vamos con ello, empezaremos con las casas de arriba, de izquierda a derecha. Focuseate en la primera. Recuerda que la contraseña de cada una es la suma de los dos primeros menos la suma de los dos segundos.\"");
+                            step++;
+                            attempts[step] = 0;
+                            if (vpnButtonVisible) {
+                                vpnButton.classList.add('hidden');
+                                vpnButtonVisible = false;
+                            }
+                        }, 5000);
+                    } else {
+                        outputToTerminal('Comando incorrecto. Recuerda el formato: -nmap {código1,código2,código3,código4}', 'error');
+                        attempts[step]++;
+                        checkFailure();
+                        if (vpnButtonVisible) {
+                            vpnButton.classList.add('hidden');
+                            vpnButtonVisible = false;
+                        }
+                    }
+                    break;
+                case 4:
+                    if (command === '-focus "house" --9041') {
+                        outputToTerminal('Accediendo al sistema de la casa nº9041...');
+                        setTimeout(() => {
+                            const password = prompt('Introduce la contraseña para la casa nº9041:');
+                            if (password === '4') {
+                                outputToTerminal('Acceso concedido a la casa nº9041', 'success');
+                                updateChat("Ahora nos adentraremos en el sistema de alarma. Ya sabes como.");
+                                step++;
+                                attempts[step] = 0;
+                            } else {
+                                outputToTerminal('Contraseña incorrecta. Intenta de nuevo.', 'error');
+                                attempts[step]++;
+                                checkFailure();
+                            }
+                        }, 2500);
+                    } else {
+                        outputToTerminal('Comando incorrecto. Intenta de nuevo. Formato: -focus "house" --número', 'error');
+                        attempts[step]++;
+                        checkFailure();
+                    }
+                    break;
+                case 5:
+                    if (command === '-bypass "alarm" -ipv6 --3de0:8d2e:48:4f:d678:92:51a:4') {
+                        outputToTerminal('Intentando bypass de la alarma...');
+                        setTimeout(() => {
+                            outputToTerminal('¡Bypass de alarma exitoso!', 'success');
+                            missionCompleted = true;
+                            commandInput.disabled = true;
+                            if (vpnActivated) {
+                                successScreen.style.display = 'block';
+                            } else {
+                                fakeSuccessScreen.style.display = 'block';
+                                const warningContent = `Tu IP es ${generateRandomIP()}.\nUbicación: ERLC, CP Zona Housing.\nIntentaste hackearnos sin protección y ahora estamos tras de ti.\n\nDurante todo el proceso, hemos recolectado toda tu información y la de tu banda... No tienes escapatoria. 💻🔍\n\nAhora debes tomar una decisión que cambiará todo... 🚨\n\nTienes dos opciones:\n\n1. Puedes ser el único objetivo y salvar a tu banda, o...\n2. Puedes avisarles y ponerlos a todos en peligro, pero ellos morirán si tomas esa decisión. Sabemos que tienen superioridad en armas, pero no podrán enfrentarse a nosotros.\n\nSi decides hacer lo correcto y proteger a tu gente, debes arrodillarte frente a la puerta de tu casa. Ellos sabrán que hiciste lo que tenías que hacer, incluso si te cuesta la vida.\n\n⚠️ ¿Qué harás? ⚠️\n\nLa decisión está en tus manos, y sabemos lo que elegirás... ¡Hazlo rápido! Tu vida está en juego, pero también la de ellos.\n\n¡Piensa bien, elige sabiamente, y recuerda que te estamos observando y escuchando! 🕵️‍♂️\n\nNo te confundas... ¡Te estamos escuchando en todo momento! ⚠️\n`;
+                                createTxtFile(warningContent, 'AVISO_PRIORITARIO.txt'); // Descargar el archivo .txt si no se activó la VPN
+                            }
+                        }, 3000);
+                    } else {
+                        outputToTerminal('Comando incorrecto. Intenta con: -bypass "alarm"', 'error');
+                        attempts[step]++;
+                        checkFailure();
+                    }
+                    break;
+
+                default:
+                    outputToTerminal('Misión finalizada.', 'success');
+                    if (vpnActivated) {
+                        successScreen.style.display = 'block';
+                    } else {
+                        fakeSuccessScreen.style.display = 'block';
+                        const warningContent = `Tu IP es ${generateRandomIP()}.\nUbicación: ERLC, CP High Rock Park.\nIntentaste hackearnos sin protección y ahora estamos tras de ti.\n\nDurante todo el proceso, hemos recolectado toda tu información y la de tu banda... No tienes escapatoria. 💻🔍\n\nAhora debes tomar una decisión que cambiará todo... 🚨\n\nTienes dos opciones:\n\n1. Puedes ser el único objetivo y salvar a tu banda, o...\n2. Puedes avisarles y ponerlos a todos en peligro, pero ellos morirán si tomas esa decisión. Sabemos que tienen superioridad en armas, pero no podrán enfrentarse a nosotros.\n\nSi decides hacer lo correcto y proteger a tu gente, debes arrodillarte frente a la puerta de tu casa. Ellos sabrán que hiciste lo que tenías que hacer, incluso si te cuesta la vida.\n\n⚠️ ¿Qué harás? ⚠️\n\nLa decisión está en tus manos, y sabemos lo que elegirás... ¡Hazlo rápido! Tu vida está en juego, pero también la de ellos.\n\n¡Piensa bien, elige sabiamente, y recuerda que te estamos observando y escuchando! 🕵️‍♂️\n\nNo te confundas... ¡Te estamos escuchando en todo momento! ⚠️\n`;
+                        createTxtFile(warningContent, 'AVISO_PRIORITARIO.txt'); // Descargar el archivo .txt si no se activó la VPN
+                    }
+            }
+        }
+    </script>
+</body>
+</html>
