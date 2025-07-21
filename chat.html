@@ -3,209 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <title>Chat Anónimo Darknet</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    /* Fondo negro total */
     body {
-      background: #000000;
-      color: #00ff00;
-      font-family: 'Courier New', monospace;
+      background: #0b0c0d;
+      color: #0f0;
+      font-family: monospace;
       padding: 20px;
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      user-select: none;
     }
-    h1 {
-      text-shadow:
-        0 0 5px #00ff00,
-        0 0 10px #00ff00,
-        0 0 20px #00ff00,
-        0 0 40px #00ff00;
-      margin-bottom: 20px;
-    }
-    #warning {
-      background: #220000;
-      color: #ff4444;
-      border: 1px solid #ff4444;
-      padding: 8px 12px;
-      border-radius: 4px;
-      margin-bottom: 15px;
-      font-weight: bold;
-      display: none;
-      width: 90%;
-      max-width: 600px;
-      text-align: center;
-      user-select: text;
-      letter-spacing: 1.5px;
-    }
-    #chat {
-      background: #0b0b0b;
-      border: 1px solid #00ff00;
-      box-shadow:
-        0 0 8px #00ff00,
-        inset 0 0 8px #00ff00;
-      border-radius: 8px;
-      width: 90%;
-      max-width: 600px;
+    #messages {
       height: 300px;
       overflow-y: auto;
-      padding: 15px;
-      font-size: 15px;
-      line-height: 1.4;
-      user-select: text;
-    }
-    .message {
+      border: 1px solid #0f0;
+      padding: 10px;
       margin-bottom: 10px;
+      background: #020202;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      background: #000;
+      color: #0f0;
+      border: 1px solid #0f0;
+      font-family: monospace;
+    }
+    button:hover {
+      background: #0f0;
+      color: #000;
+      cursor: pointer;
     }
     .msg-user {
       font-weight: bold;
-      color: #00ff00;
-      text-shadow:
-        0 0 3px #00ff00,
-        0 0 7px #00ff00;
-    }
-    .msg-text {
-      margin-left: 8px;
-      color: #80ff80;
-      text-shadow: 0 0 5px #008000;
-      word-wrap: break-word;
-    }
-    #messageInput {
-      width: 90%;
-      max-width: 600px;
-      padding: 12px 15px;
-      font-size: 16px;
-      border: 2px solid #00ff00;
-      border-radius: 6px;
-      background: #000000;
-      color: #00ff00;
-      text-shadow:
-        0 0 4px #00ff00;
-      box-shadow: inset 0 0 8px #00ff00;
-      outline: none;
-      user-select: text;
-    }
-    #messageInput::placeholder {
-      color: #007700;
-      text-shadow: none;
-    }
-    #sendBtn {
-      width: 90%;
-      max-width: 600px;
-      margin-top: 12px;
-      padding: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      background: #002200;
-      border: 2px solid #00ff00;
-      border-radius: 6px;
-      color: #00ff00;
-      cursor: pointer;
-      text-shadow:
-        0 0 3px #00ff00;
-      transition: background 0.3s ease, color 0.3s ease;
-      user-select: none;
-    }
-    #sendBtn:hover {
-      background: #00ff00;
-      color: #000000;
-      text-shadow: none;
     }
   </style>
 </head>
 <body>
   <h1>💬 Chat Anónimo Darknet</h1>
-  <div id="warning">⚠️ Mensaje contiene palabras prohibidas.</div>
-  <div id="chat"></div>
-  <input id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
+  <div id="messages"></div>
+  <input id="msg" placeholder="Escribe un mensaje" autocomplete="off" />
   <button id="sendBtn">Enviar</button>
 
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js"></script>
+
   <script>
-    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
       authDomain: "ibericachatdrknt.firebaseapp.com",
-      databaseURL: "https://ibericachatdrknt-default-rtdb.firebaseio.com",
       projectId: "ibericachatdrknt",
-      storageBucket: "ibericachatdrknt.appspot.com",
+      storageBucket: "ibericachatdrknt.firebasestorage.app",
       messagingSenderId: "933093011275",
-      appId: "1:933093011275:web:645bd6ea82dcc022fc02ce"
+      appId: "1:933093011275:web:645bd6ea82dcc022fc02ce",
+      measurementId: "G-D0RNWWQXLS"
     };
 
+    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Obtener o crear usuario anónimo fijo
+    // Generar usuario y color único localStorage
     let userName = localStorage.getItem("anonUser");
+    let userColor = localStorage.getItem("anonUserColor");
+
     if (!userName) {
       userName = "Anon" + (Math.floor(Math.random() * 9000) + 1000);
       localStorage.setItem("anonUser", userName);
     }
 
-    const chat = document.getElementById("chat");
-    const input = document.getElementById("messageInput");
+    if (!userColor) {
+      const colors = ['#00ff00', '#00ffff', '#ff00ff', '#ffff00', '#ff5500']; 
+      userColor = colors[Math.floor(Math.random() * colors.length)];
+      localStorage.setItem("anonUserColor", userColor);
+    }
+
+    const messagesDiv = document.getElementById("messages");
+    const input = document.getElementById("msg");
     const sendBtn = document.getElementById("sendBtn");
-    const warning = document.getElementById("warning");
 
-    // Palabras prohibidas (en minúsculas)
-    const bannedWords = ["mala", "malo", "feo", "tonto", "idiota", "spam"]; // Cambia según necesites
+    // Escuchar nuevos mensajes
+    const mensajesRef = db.ref('mensajes');
+    mensajesRef.on('child_added', (data) => {
+      const message = data.val();
+      const p = document.createElement('p');
 
-    // Escuchar mensajes nuevos
-    db.ref("chat").on("child_added", snapshot => {
-      const data = snapshot.val();
-      const msgDiv = document.createElement("div");
-      msgDiv.classList.add("message");
+      let color;
+      if (message.user === userName) {
+        color = userColor;
+      } else {
+        color = message.color || '#0ff';
+      }
 
-      const userSpan = document.createElement("span");
-      userSpan.classList.add("msg-user");
-      userSpan.textContent = data.user + ":";
-
-      const textSpan = document.createElement("span");
-      textSpan.classList.add("msg-text");
-      textSpan.textContent = data.text;
-
-      msgDiv.appendChild(userSpan);
-      msgDiv.appendChild(textSpan);
-
-      chat.appendChild(msgDiv);
-      chat.scrollTop = chat.scrollHeight;
+      p.innerHTML = `<span class="msg-user" style="color:${color}">${message.user}:</span> ${escapeHtml(message.text)}`;
+      messagesDiv.appendChild(p);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
 
-    // Función para verificar mensaje
-    function contieneProhibidas(text) {
-      const texto = text.toLowerCase();
-      return bannedWords.some(palabra => texto.includes(palabra));
+    // Escapar HTML
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[m]);
     }
 
     // Enviar mensaje
-    function sendMessage() {
+    sendBtn.addEventListener('click', () => {
       const text = input.value.trim();
-      if (text === "") return;
-
-      if (contieneProhibidas(text)) {
-        warning.style.display = "block";
-        setTimeout(() => warning.style.display = "none", 3000);
-        return;
+      if(text !== '') {
+        mensajesRef.push({ user: userName, text, color: userColor });
+        input.value = '';
       }
+    });
 
-      db.ref("chat").push({
-        user: userName,
-        text: text,
-        timestamp: Date.now()
-      });
-
-      input.value = "";
-    }
-
-    sendBtn.addEventListener("click", sendMessage);
-
-    input.addEventListener("keypress", e => {
-      if (e.key === "Enter") sendMessage();
+    // Enviar con Enter
+    input.addEventListener('keypress', (e) => {
+      if(e.key === 'Enter') {
+        sendBtn.click();
+      }
     });
   </script>
 </body>
