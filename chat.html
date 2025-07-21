@@ -61,9 +61,23 @@
     localStorage.setItem("anonUser", username);
   }
 
+  // Lista de palabras prohibidas (todo en minúsculas)
+  const bannedWords = ["mala", "tonta", "idiota", "prohibida", "palabrota"];
+
+  function containsBannedWord(text) {
+    const lowerText = text.toLowerCase();
+    return bannedWords.some(word => lowerText.includes(word));
+  }
+
   function sendMessage() {
-    const msg = document.getElementById("messageInput").value;
-    if (msg.trim() === "") return;
+    const msg = document.getElementById("messageInput").value.trim();
+    if (msg === "") return;
+
+    if (containsBannedWord(msg)) {
+      alert("Tu mensaje contiene palabras prohibidas y no puede ser enviado.");
+      return;
+    }
+
     db.ref("mensajes").push({
       user: username,
       text: msg
