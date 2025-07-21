@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Chat Anónimo IberciaRP</title>
+  <title>Chat Anónimo con Timeout y Moderación</title>
   <style>
     body {
       font-family: monospace;
@@ -46,7 +46,7 @@
 </head>
 <body>
 
-<h2>Chat Anónimo IbericaRP</h2>
+<h2>Chat Anónimo con Timeout y Moderación</h2>
 <div id="chat"></div>
 
 <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
@@ -57,7 +57,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-  // Config Firebase
+  // Config Firebase (con databaseURL correcto)
   const firebaseConfig = {
     apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
     authDomain: "ibericachatdrknt.firebaseapp.com",
@@ -75,39 +75,48 @@
   // Admins fijos
   const admins = ['Anon4397', 'Anon7919'];
 
-  // Obtener o crear usuario persistente en localStorage
+  // Timeout global: { usuario: {until: timestamp, reason: string} }
+  let timeouts = JSON.parse(localStorage.getItem('timeouts')) || {};
+
+  // Usuario anónimo fijo en localStorage
   let username = localStorage.getItem('anonUser');
   if (!username) {
     username = 'Anon' + Math.floor(Math.random() * 9000 + 1000);
     localStorage.setItem('anonUser', username);
   }
 
+  // Lista estricta de palabras prohibidas (minusculas)
+  const bannedWords = [
+    'puta', 'mierda', 'culo', 'joder', 'gilipollas', 'hostia', 'cabron', 'coño',
+    'polla', 'pendejo', 'idiota', 'imbecil', 'retardado', 'fascista', 'nazis',
+    'terrorista', 'racista', 'machista', 'homofobo', 'mongolo', 'estupido'
+  ];
+
+  // Duración timeout automático por palabra (segundos)
+  const AUTO_TIMEOUT_SECONDS = 60;
+  const AUTO_TIMEOUT_REASON = "Uso de palabra prohibida";
+
   const chatDiv = document.getElementById('chat');
   const input = document.getElementById('messageInput');
   const sendBtn = document.getElementById('sendBtn');
 
-  // Estado de baneos cargados desde Firebase
-  let bannedUsers = {};
+  function guardarTimeouts() {
+    localStorage.setItem('timeouts', JSON.stringify(timeouts));
+  }
 
-  // Timeout usuarios: { username: timestamp_fin_timeout }
-  let timeoutUsers = {};
+  function estaEnTimeout(user) {
+    if (!timeouts[user]) return false;
+    if (Date.now() > timeouts[user].until) {
+      delete timeouts[user];
+      guardarTimeouts();
+      return false;
+    }
+    return true;
+  }
 
-  // Palabras prohibidas (muy estrictas, puedes modificar)
-  const palabrasProhibidas = [
-    'puta', 'mierda', 'cabron', 'gilipollas', 'joder', 'coño',
-    'puta madre', 'hostia', 'culo', 'pendejo', 'idiota', 'estupido',
-    'fuck', 'shit', 'bitch', 'asshole'
-  ];
-
-  // Descargar fichero de texto
-  function descargarTexto(filename, text) {
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    element.setAttribute('download', filename);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  function tiempoRestante(user) {
+    if (!timeouts[user]) return 0;
+    return Math.max(0, Math.floor((timeouts[user].until - Date.now()) / 1000));
   }
 
   // Mostrar mensaje en chat
@@ -119,54 +128,15 @@
     chatDiv.scrollTop = chatDiv.scrollHeight;
   }
 
-  // Revisar si usuario está baneado
-  function estaBaneado(user) {
-    return bannedUsers.hasOwnProperty(user);
-  }
-
-  // Revisar si usuario está en timeout
-  function estaEnTimeout(user) {
-    if (!timeoutUsers[user]) return false;
-    return Date.now() < timeoutUsers[user];
-  }
-
-  // Función para activar timeout de 1 minuto
-  function activarTimeout(user) {
-    const finTimeout = Date.now() + 60 * 1000; // 1 minuto en ms
-    timeoutUsers[user] = finTimeout;
-    alert(`Has usado palabras prohibidas. Timeout de 1 minuto activado.`);
-    input.disabled = true;
-    sendBtn.disabled = true;
-
-    setTimeout(() => {
-      delete timeoutUsers[user];
-      if (user === username) {
-        alert('Timeout terminado. Ya puedes enviar mensajes.');
-        input.disabled = false;
-        sendBtn.disabled = false;
-      }
-    }, 60 * 1000);
-  }
-
-  // Cargar lista de baneados desde Firebase
-  function cargarBaneados() {
-    db.ref('baneados').on('value', snapshot => {
-      bannedUsers = snapshot.val() || {};
-      if (estaBaneado(username)) {
-        alert(`Estás baneado del chat.\nRazón: ${bannedUsers[username]}`);
-        input.disabled = true;
-        sendBtn.disabled = true;
-      } else if (!estaEnTimeout(username)) {
-        input.disabled = false;
-        sendBtn.disabled = false;
-      }
-    });
-  }
-
-  // Comprobar si el mensaje contiene palabras prohibidas
-  function contienePalabrasProhibidas(text) {
-    const textoLower = text.toLowerCase();
-    return palabrasProhibidas.some(palabra => textoLower.includes(palabra));
+  // Descargar texto archivo
+  function descargarTexto(filename, text) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   }
 
   // Procesar comandos (solo admins)
@@ -174,78 +144,99 @@
     const partes = text.trim().split(' ');
     const comando = partes[0].toLowerCase();
     const argumento = partes[1];
-    const razon = partes.slice(2).join(' ') || 'Sin razón';
+    const duracionSegs = parseInt(partes[2]);
+    const razon = partes.slice(3).join(' ') || 'Sin razón';
 
     if (!admins.includes(username)) {
       alert('No tienes permisos para usar comandos.');
       return true;
     }
 
-    if (comando === '!b4nIp') {
-      if (!argumento) {
-        alert('Debes indicar un usuario a banear.');
+    if (comando === '!t1meout') {
+      if (!argumento || isNaN(duracionSegs)) {
+        alert('Uso correcto: !t1meout <usuario> <segundos> <razón>');
         return true;
       }
       if (admins.includes(argumento)) {
-        alert('No puedes banear a un administrador.');
+        alert('No puedes poner timeout a un administrador.');
         return true;
       }
-      db.ref('baneados/' + argumento).set(razon);
-      alert(`Usuario ${argumento} baneado. Razón: ${razon}`);
+      const hasta = Date.now() + duracionSegs * 1000;
+      timeouts[argumento] = { until: hasta, reason: razon };
+      guardarTimeouts();
+      alert(`Usuario ${argumento} tiene timeout por ${duracionSegs} segundos. Razón: ${razon}`);
       return true;
     }
 
-    if (comando === '!u4nb4nIp') {
+    if (comando === '!unt1meout') {
       if (!argumento) {
-        alert('Debes indicar un usuario a desbanear.');
+        alert('Debes indicar un usuario para quitar timeout.');
         return true;
       }
-      db.ref('baneados/' + argumento).remove();
-      alert(`Usuario ${argumento} desbaneado.`);
+      if (timeouts.hasOwnProperty(argumento)) {
+        delete timeouts[argumento];
+        guardarTimeouts();
+        alert(`Timeout quitado a usuario ${argumento}.`);
+      } else {
+        alert('Usuario no está en timeout.');
+      }
       return true;
     }
 
-    if (comando === '!list4ban') {
-      let texto = 'Usuarios baneados:\n\n';
-      for (const user in bannedUsers) {
-        texto += `${user} - Razón: ${bannedUsers[user]}\n`;
+    if (comando === '!list4time') {
+      let texto = 'Usuarios en timeout:\n\n';
+      for (const user in timeouts) {
+        const secs = tiempoRestante(user);
+        texto += `${user} - Tiempo restante: ${secs}s - Razón: ${timeouts[user].reason}\n`;
       }
-      if (texto === 'Usuarios baneados:\n\n') texto += 'No hay usuarios baneados.';
-      descargarTexto('baneados.txt', texto);
+      if (texto === 'Usuarios en timeout:\n\n') texto += 'No hay usuarios en timeout.';
+      descargarTexto('timeout.txt', texto);
       return true;
     }
 
     return false;
   }
 
-  // Enviar mensaje
+  // Comprobar si mensaje tiene palabra prohibida
+  function contienePalabraProhibida(text) {
+    const textLower = text.toLowerCase();
+    return bannedWords.some(word => textLower.includes(word));
+  }
+
+  // Aplicar timeout automático si hay palabra prohibida
+  function checkAndApplyAutoTimeout(text) {
+    if (contienePalabraProhibida(text)) {
+      if (!estaEnTimeout(username)) {
+        const hasta = Date.now() + AUTO_TIMEOUT_SECONDS * 1000;
+        timeouts[username] = { until: hasta, reason: AUTO_TIMEOUT_REASON };
+        guardarTimeouts();
+        alert(`Has recibido timeout automático de ${AUTO_TIMEOUT_SECONDS} segundos por usar palabra prohibida.`);
+        return true;
+      }
+    }
+    return false;
+  }
+
   function enviarMensaje() {
     const text = input.value.trim();
     if (text === '') return;
 
-    if (estaBaneado(username)) {
-      alert(`Estás baneado del chat.\nRazón: ${bannedUsers[username]}`);
-      input.value = '';
-      return;
-    }
-
     if (estaEnTimeout(username)) {
-      alert(`Estás en timeout por usar palabras prohibidas. Espera un minuto antes de enviar mensajes.`);
+      const secs = tiempoRestante(username);
+      alert(`Estás en timeout por ${secs} segundos. No puedes enviar mensajes.\nRazón: ${timeouts[username].reason}`);
       input.value = '';
       return;
     }
 
     if (text.startsWith('!')) {
-      const cmd = procesarComando(text);
-      if (cmd) {
+      const comandoProcesado = procesarComando(text);
+      if (comandoProcesado) {
         input.value = '';
         return;
       }
     }
 
-    // Comprobar palabras prohibidas
-    if (contienePalabrasProhibidas(text)) {
-      activarTimeout(username);
+    if (checkAndApplyAutoTimeout(text)) {
       input.value = '';
       return;
     }
@@ -258,10 +249,10 @@
     input.value = '';
   }
 
-  // Escuchar nuevos mensajes, mostrar solo si no son baneados ni comandos
+  // Mostrar mensajes (no comandos y no timeout)
   db.ref('mensajes').on('child_added', snapshot => {
     const msg = snapshot.val();
-    if (estaBaneado(msg.user)) return;
+    if (estaEnTimeout(msg.user)) return;
     if (msg.text.startsWith('!')) return;
     mostrarMensaje(msg.user, msg.text);
   });
@@ -271,7 +262,10 @@
     if (e.key === 'Enter') enviarMensaje();
   });
 
-  cargarBaneados();
+  // Al cargar, avisar timeout si aplica
+  if (estaEnTimeout(username)) {
+    alert(`Estás en timeout. Razón: ${timeouts[username].reason}`);
+  }
 </script>
 
 </body>
