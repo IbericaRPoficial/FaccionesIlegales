@@ -1,78 +1,82 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Chat Anónimo Firebase Clásico</title>
+  <meta charset="UTF-8">
+  <title>Chat Anónimo</title>
   <style>
-    body { background: #111; color: #0f0; font-family: monospace; padding: 20px; }
-    #messages { height: 300px; overflow-y: auto; border: 1px solid #0f0; padding: 10px; margin-bottom: 10px; background: #000; }
-    input, button { padding: 10px; font-size: 16px; }
-    .msg-user { color: #0f0; }
-    .msg-other { color: #0ff; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
+      padding: 20px;
+    }
+    #chat {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #444;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #1e1e1e;
+    }
+    .message {
+      margin-bottom: 10px;
+    }
+    .anon {
+      color: #66ff66;
+    }
   </style>
 </head>
 <body>
-  <h1>💬 Chat Anónimo Firebase</h1>
-  <div id="messages"></div>
-  <input id="msg" placeholder="Escribe un mensaje" />
-  <button id="sendBtn">Enviar</button>
 
-  <!-- Firebase SDK clásico -->
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js"></script>
+<h2>Chat Anónimo</h2>
+<div id="chat"></div>
 
-  <script>
-    // Configuración Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
-      authDomain: "ibericachatdrknt.firebaseapp.com",
-      projectId: "ibericachatdrknt",
-      storageBucket: "ibericachatdrknt.firebasestorage.app",
-      messagingSenderId: "933093011275",
-      appId: "1:933093011275:web:645bd6ea82dcc022fc02ce",
-      measurementId: "G-D0RNWWQXLS"
-    };
+<input type="text" id="messageInput" placeholder="Escribe tu mensaje..." />
+<button onclick="sendMessage()">Enviar</button>
 
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    // Usuario anónimo con número aleatorio en sessionStorage
-    if (!sessionStorage.getItem("anonUser")) {
-      const randomNum = Math.floor(Math.random() * 9000) + 1000;
-      sessionStorage.setItem("anonUser", "Anon" + randomNum);
-    }
-    const userName = sessionStorage.getItem("anonUser");
+<script>
+  // Configuración Firebase con databaseURL CORRECTO
+  const firebaseConfig = {
+    apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
+    authDomain: "ibericachatdrknt.firebaseapp.com",
+    databaseURL: "https://ibericachatdrknt-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "ibericachatdrknt",
+    storageBucket: "ibericachatdrknt.appspot.com",
+    messagingSenderId: "933093011275",
+    appId: "1:933093011275:web:645bd6ea82dcc022fc02ce",
+    measurementId: "G-D0RNWWQXLS"
+  };
 
-    const messagesDiv = document.getElementById("messages");
-    const input = document.getElementById("msg");
-    const sendBtn = document.getElementById("sendBtn");
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    // Escuchar nuevos mensajes
-    const mensajesRef = db.ref('mensajes');
-    mensajesRef.on('child_added', (data) => {
-      const message = data.val();
-      const p = document.createElement('p');
-      p.innerHTML = `<span class="${message.user === userName ? 'msg-user' : 'msg-other'}">${message.user}:</span> ${message.text}`;
-      messagesDiv.appendChild(p);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  const username = "Anon" + Math.floor(Math.random() * 10000);
+
+  function sendMessage() {
+    const msg = document.getElementById("messageInput").value;
+    if (msg.trim() === "") return;
+    db.ref("mensajes").push({
+      user: username,
+      text: msg
     });
+    document.getElementById("messageInput").value = "";
+  }
 
-    // Enviar mensaje
-    sendBtn.addEventListener('click', () => {
-      const text = input.value.trim();
-      if(text !== '') {
-        mensajesRef.push({ user: userName, text });
-        input.value = '';
-      }
-    });
+  const chatDiv = document.getElementById("chat");
 
-    // Enviar con Enter
-    input.addEventListener('keypress', (e) => {
-      if(e.key === 'Enter') {
-        sendBtn.click();
-      }
-    });
-  </script>
+  db.ref("mensajes").on("child_added", function(snapshot) {
+    const msg = snapshot.val();
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.innerHTML = `<span class="anon">${msg.user}:</span> ${msg.text}`;
+    chatDiv.appendChild(div);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  });
+</script>
+
 </body>
 </html>
