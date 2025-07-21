@@ -108,11 +108,11 @@
 <div id="titulo-matrix"></div>
 
 <div class="terminal">
-  <div class="command" onclick="pedirClave('robos')">ROBOS</div>
-  <div class="command" onclick="pedirClave('niveles')">NIVELES</div>
+  <div class="command" onclick="irDirecto('normativa.html')">NORMATIVA</div>
+  <div class="command" onclick="irDirecto('robos')">ROBOS</div>
+  <div class="command" onclick="irDirecto('niveles')">NIVELES</div>
   <div class="command" onclick="pedirClave('hacker')">HACKER</div>
   <div class="command" onclick="pedirClave('preliminares')">PRELIMINARES</div>
-  <div class="command" onclick="irDirecto('normativa.html')">NORMATIVA</div>
 </div>
 
 <div id="popup">
@@ -176,10 +176,8 @@
 
   // Lógica de contraseñas
   const claves = {
-    robos: { clave: "clave123", url: "robos.html" },
-    niveles: { clave: "nivel42", url: "niveles.html" },
-    hacker: { clave: "rootaccess", url: "terminalhacker.html" },
-    preliminares: { clave: "premision", url: "preliminares.html" }
+    hacker: { clave: "root@iberica2025", url: "terminalhacker.html" },
+    preliminares: { clave: "start.mision#ADM", url: "preliminares.html" }
   };
 
   let seccionActual = "";
