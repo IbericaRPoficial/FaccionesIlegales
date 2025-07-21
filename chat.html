@@ -75,7 +75,7 @@
   // Admins hardcodeados
   const admins = ['Anon4397', 'Anon7919'];
 
-  // Usuarios baneados y razones (en memoria)
+  // Cargar baneados de localStorage (objeto {usuario: razón})
   let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || {};
 
   // Obtener o crear nombre de usuario en localStorage
@@ -89,7 +89,7 @@
   const input = document.getElementById('messageInput');
   const sendBtn = document.getElementById('sendBtn');
 
-  // Mostrar mensaje en chat
+  // Función para mostrar mensaje
   function mostrarMensaje(user, text) {
     const div = document.createElement('div');
     div.classList.add('message');
@@ -98,7 +98,7 @@
     chatDiv.scrollTop = chatDiv.scrollHeight;
   }
 
-  // Descargar fichero de texto
+  // Descargar fichero txt
   function descargarTexto(filename, text) {
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
@@ -109,46 +109,46 @@
     document.body.removeChild(element);
   }
 
-  // Comprobar si usuario baneado
-  function estaBaneado(user) {
-    return bannedUsers.hasOwnProperty(user);
-  }
-
   // Guardar baneados en localStorage
   function guardarBaneados() {
     localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
   }
 
-  // Procesar comando si existe
+  // Comprobar si usuario está baneado
+  function estaBaneado(user) {
+    return bannedUsers.hasOwnProperty(user);
+  }
+
+  // Procesar comandos
   function procesarComando(text) {
-    const partes = text.split(' ');
+    const partes = text.trim().split(' ');
     const comando = partes[0].toLowerCase();
     const argumento = partes[1];
     const razon = partes.slice(2).join(' ') || 'Sin razón';
 
     if (!admins.includes(username)) {
       alert('No tienes permisos para usar comandos.');
-      return true; // se "consume" el mensaje (no se envía ni muestra)
+      return true;
     }
 
     if (comando === '!b4nIp') {
       if (!argumento) {
-        alert('Debes poner el nombre de usuario a banear.');
+        alert('Debes indicar un usuario a banear.');
         return true;
       }
       if (admins.includes(argumento)) {
-        alert('No puedes banear a otro admin.');
+        alert('No puedes banear a un administrador.');
         return true;
       }
       bannedUsers[argumento] = razon;
       guardarBaneados();
-      alert(`Usuario ${argumento} baneado por: ${razon}`);
+      alert(`Usuario ${argumento} baneado. Razón: ${razon}`);
       return true;
     }
 
     if (comando === '!u4nb4nIp') {
       if (!argumento) {
-        alert('Debes poner el nombre de usuario a desbanear.');
+        alert('Debes indicar un usuario a desbanear.');
         return true;
       }
       if (bannedUsers.hasOwnProperty(argumento)) {
@@ -162,16 +162,16 @@
     }
 
     if (comando === '!list4ban') {
-      let texto = 'Lista de usuarios baneados:\n\n';
+      let texto = 'Usuarios baneados:\n\n';
       for (const user in bannedUsers) {
         texto += `${user} - Razón: ${bannedUsers[user]}\n`;
       }
-      if (texto === 'Lista de usuarios baneados:\n\n') texto += 'No hay usuarios baneados.';
+      if (texto === 'Usuarios baneados:\n\n') texto += 'No hay usuarios baneados.';
       descargarTexto('baneados.txt', texto);
       return true;
     }
 
-    return false; // no es comando conocido
+    return false;
   }
 
   // Enviar mensaje
@@ -185,10 +185,10 @@
       return;
     }
 
-    // Procesar comandos: si devuelve true no envía mensaje
+    // Procesar comandos, si es comando devuelve true y no envía
     if (text.startsWith('!')) {
-      const fueComando = procesarComando(text);
-      if (fueComando) {
+      const comandoProcesado = procesarComando(text);
+      if (comandoProcesado) {
         input.value = '';
         return;
       }
@@ -202,24 +202,20 @@
     input.value = '';
   }
 
-  // Escuchar mensajes nuevos
-  db.ref('mensajes').on('child_added', (snapshot) => {
+  // Escuchar nuevos mensajes y mostrarlos, ignorar mensajes baneados y comandos
+  db.ref('mensajes').on('child_added', snapshot => {
     const msg = snapshot.val();
-
-    if (estaBaneado(msg.user)) return; // ignorar mensajes de baneados
-    if (msg.text.startsWith('!')) return; // no mostrar comandos en chat
-
+    if (estaBaneado(msg.user)) return; // No mostrar mensajes baneados
+    if (msg.text.startsWith('!')) return; // No mostrar comandos
     mostrarMensaje(msg.user, msg.text);
   });
 
   sendBtn.addEventListener('click', enviarMensaje);
   input.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      enviarMensaje();
-    }
+    if (e.key === 'Enter') enviarMensaje();
   });
 
-  // Mostrar aviso si usuario actual está baneado
+  // Mostrar alerta al usuario si está baneado
   if (estaBaneado(username)) {
     alert(`Estás baneado del chat. Razón: ${bannedUsers[username]}`);
   }
