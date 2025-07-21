@@ -1,45 +1,63 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Chat Anónimo</title>
+  <meta charset="UTF-8" />
+  <title>Chat Anónimo con Moderación y Ban</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: monospace;
       background-color: #121212;
-      color: white;
+      color: #66ff66;
       padding: 20px;
     }
     #chat {
       max-height: 400px;
       overflow-y: auto;
-      border: 1px solid #444;
+      border: 1px solid #0f0;
       padding: 10px;
       margin-bottom: 10px;
-      background: #1e1e1e;
+      background: #000;
     }
     .message {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
-    .anon {
+    .msg-user {
       color: #66ff66;
+    }
+    .msg-other {
+      color: #00ffff;
+    }
+    #messageInput {
+      width: 80%;
+      padding: 10px;
+      background: #222;
+      border: 1px solid #0f0;
+      color: #66ff66;
+    }
+    #sendBtn {
+      padding: 10px 15px;
+      background: #0f0;
+      border: none;
+      cursor: pointer;
+      color: black;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-<h2>Chat Anónimo</h2>
+<h2>Chat Anónimo con Ban</h2>
 <div id="chat"></div>
 
-<input type="text" id="messageInput" placeholder="Escribe tu mensaje..." />
-<button onclick="sendMessage()">Enviar</button>
+<input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
+<button id="sendBtn">Enviar</button>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-  // Configuración Firebase con databaseURL CORRECTO
+  // Config Firebase (con databaseURL correcto)
   const firebaseConfig = {
     apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
     authDomain: "ibericachatdrknt.firebaseapp.com",
@@ -54,54 +72,157 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Guardar y reutilizar usuario en localStorage
-  let username = localStorage.getItem("anonUser");
+  // Admins hardcodeados
+  const admins = ['Anon4397', 'Anon7919'];
+
+  // Usuarios baneados y razones (en memoria)
+  let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || {};
+
+  // Obtener o crear nombre de usuario en localStorage
+  let username = localStorage.getItem('anonUser');
   if (!username) {
-    username = "Anon" + Math.floor(Math.random() * 10000);
-    localStorage.setItem("anonUser", username);
+    username = 'Anon' + Math.floor(Math.random() * 9000 + 1000);
+    localStorage.setItem('anonUser', username);
   }
 
-  // Lista de palabras prohibidas (todo en minúsculas)
-  const bannedWords = ["mala", "tonta", "idiota", "prohibida", "palabrota"];
+  const chatDiv = document.getElementById('chat');
+  const input = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
 
-  function containsBannedWord(text) {
-    const lowerText = text.toLowerCase();
-    return bannedWords.some(word => lowerText.includes(word));
+  // Mostrar mensaje en chat
+  function mostrarMensaje(user, text) {
+    const div = document.createElement('div');
+    div.classList.add('message');
+    div.innerHTML = `<span class="${user === username ? 'msg-user' : 'msg-other'}">${user}:</span> ${text}`;
+    chatDiv.appendChild(div);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
   }
 
-  function sendMessage() {
-    const msg = document.getElementById("messageInput").value.trim();
-    if (msg === "") return;
+  // Descargar fichero de texto
+  function descargarTexto(filename, text) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  }
 
-    if (containsBannedWord(msg)) {
-      alert("Tu mensaje contiene palabras prohibidas y no puede ser enviado.");
+  // Comprobar si usuario baneado
+  function estaBaneado(user) {
+    return bannedUsers.hasOwnProperty(user);
+  }
+
+  // Guardar baneados en localStorage
+  function guardarBaneados() {
+    localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
+  }
+
+  // Procesar comando si existe
+  function procesarComando(text) {
+    const partes = text.split(' ');
+    const comando = partes[0].toLowerCase();
+    const argumento = partes[1];
+    const razon = partes.slice(2).join(' ') || 'Sin razón';
+
+    if (!admins.includes(username)) {
+      alert('No tienes permisos para usar comandos.');
+      return true; // se "consume" el mensaje (no se envía ni muestra)
+    }
+
+    if (comando === '!b4nIp') {
+      if (!argumento) {
+        alert('Debes poner el nombre de usuario a banear.');
+        return true;
+      }
+      if (admins.includes(argumento)) {
+        alert('No puedes banear a otro admin.');
+        return true;
+      }
+      bannedUsers[argumento] = razon;
+      guardarBaneados();
+      alert(`Usuario ${argumento} baneado por: ${razon}`);
+      return true;
+    }
+
+    if (comando === '!u4nb4nIp') {
+      if (!argumento) {
+        alert('Debes poner el nombre de usuario a desbanear.');
+        return true;
+      }
+      if (bannedUsers.hasOwnProperty(argumento)) {
+        delete bannedUsers[argumento];
+        guardarBaneados();
+        alert(`Usuario ${argumento} desbaneado.`);
+      } else {
+        alert('Usuario no está baneado.');
+      }
+      return true;
+    }
+
+    if (comando === '!list4ban') {
+      let texto = 'Lista de usuarios baneados:\n\n';
+      for (const user in bannedUsers) {
+        texto += `${user} - Razón: ${bannedUsers[user]}\n`;
+      }
+      if (texto === 'Lista de usuarios baneados:\n\n') texto += 'No hay usuarios baneados.';
+      descargarTexto('baneados.txt', texto);
+      return true;
+    }
+
+    return false; // no es comando conocido
+  }
+
+  // Enviar mensaje
+  function enviarMensaje() {
+    const text = input.value.trim();
+    if (text === '') return;
+
+    if (estaBaneado(username)) {
+      alert(`Estás baneado del chat. Razón: ${bannedUsers[username]}`);
+      input.value = '';
       return;
     }
 
-    db.ref("mensajes").push({
+    // Procesar comandos: si devuelve true no envía mensaje
+    if (text.startsWith('!')) {
+      const fueComando = procesarComando(text);
+      if (fueComando) {
+        input.value = '';
+        return;
+      }
+    }
+
+    // Enviar mensaje normal
+    db.ref('mensajes').push({
       user: username,
-      text: msg
+      text: text
     });
-    document.getElementById("messageInput").value = "";
+    input.value = '';
   }
 
-  const chatDiv = document.getElementById("chat");
-
-  db.ref("mensajes").on("child_added", function(snapshot) {
+  // Escuchar mensajes nuevos
+  db.ref('mensajes').on('child_added', (snapshot) => {
     const msg = snapshot.val();
-    const div = document.createElement("div");
-    div.classList.add("message");
-    div.innerHTML = `<span class="anon">${msg.user}:</span> ${msg.text}`;
-    chatDiv.appendChild(div);
-    chatDiv.scrollTop = chatDiv.scrollHeight;
+
+    if (estaBaneado(msg.user)) return; // ignorar mensajes de baneados
+    if (msg.text.startsWith('!')) return; // no mostrar comandos en chat
+
+    mostrarMensaje(msg.user, msg.text);
   });
 
-  // Enviar mensaje con tecla Enter
-  document.getElementById("messageInput").addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-      sendMessage();
+  sendBtn.addEventListener('click', enviarMensaje);
+  input.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      enviarMensaje();
     }
   });
+
+  // Mostrar aviso si usuario actual está baneado
+  if (estaBaneado(username)) {
+    alert(`Estás baneado del chat. Razón: ${bannedUsers[username]}`);
+  }
 </script>
 
 </body>
