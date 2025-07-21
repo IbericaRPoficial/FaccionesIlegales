@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Chat Anónimo con Ban y Comandos</title>
+  <title>Chat Anónimo con Ban Global y Comandos</title>
   <style>
     body {
       font-family: monospace;
@@ -46,7 +46,7 @@
 </head>
 <body>
 
-<h2>Chat Anónimo con Ban y Comandos</h2>
+<h2>Chat Anónimo con Ban Global y Comandos</h2>
 <div id="chat"></div>
 
 <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
@@ -57,7 +57,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-  // Config Firebase (con databaseURL correcto)
+  // Config Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
     authDomain: "ibericachatdrknt.firebaseapp.com",
@@ -75,10 +75,7 @@
   // Admins fijos
   const admins = ['Anon4397', 'Anon7919'];
 
-  // Cargar baneados de localStorage o crear objeto vacío
-  let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || {};
-
-  // Obtener o crear usuario
+  // Obtener o crear usuario persistente en localStorage
   let username = localStorage.getItem('anonUser');
   if (!username) {
     username = 'Anon' + Math.floor(Math.random() * 9000 + 1000);
@@ -89,14 +86,8 @@
   const input = document.getElementById('messageInput');
   const sendBtn = document.getElementById('sendBtn');
 
-  // Función para mostrar mensaje en chat
-  function mostrarMensaje(user, text) {
-    const div = document.createElement('div');
-    div.classList.add('message');
-    div.innerHTML = `<span class="${user === username ? 'msg-user' : 'msg-other'}">${user}:</span> ${text}`;
-    chatDiv.appendChild(div);
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  }
+  // Estado de baneos cargados desde Firebase
+  let bannedUsers = {};
 
   // Descargar fichero de texto
   function descargarTexto(filename, text) {
@@ -109,14 +100,33 @@
     document.body.removeChild(element);
   }
 
-  // Guardar baneados en localStorage
-  function guardarBaneados() {
-    localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
+  // Mostrar mensaje en chat
+  function mostrarMensaje(user, text) {
+    const div = document.createElement('div');
+    div.classList.add('message');
+    div.innerHTML = `<span class="${user === username ? 'msg-user' : 'msg-other'}">${user}:</span> ${text}`;
+    chatDiv.appendChild(div);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
   }
 
-  // Comprobar si usuario está baneado
+  // Revisar si usuario está baneado
   function estaBaneado(user) {
     return bannedUsers.hasOwnProperty(user);
+  }
+
+  // Cargar lista de baneados desde Firebase
+  function cargarBaneados() {
+    db.ref('baneados').on('value', snapshot => {
+      bannedUsers = snapshot.val() || {};
+      if (estaBaneado(username)) {
+        alert(`Estás baneado del chat.\nRazón: ${bannedUsers[username]}`);
+        input.disabled = true;
+        sendBtn.disabled = true;
+      } else {
+        input.disabled = false;
+        sendBtn.disabled = false;
+      }
+    });
   }
 
   // Procesar comandos (solo admins)
@@ -140,8 +150,7 @@
         alert('No puedes banear a un administrador.');
         return true;
       }
-      bannedUsers[argumento] = razon;
-      guardarBaneados();
+      db.ref('baneados/' + argumento).set(razon);
       alert(`Usuario ${argumento} baneado. Razón: ${razon}`);
       return true;
     }
@@ -151,13 +160,8 @@
         alert('Debes indicar un usuario a desbanear.');
         return true;
       }
-      if (bannedUsers.hasOwnProperty(argumento)) {
-        delete bannedUsers[argumento];
-        guardarBaneados();
-        alert(`Usuario ${argumento} desbaneado.`);
-      } else {
-        alert('Usuario no está baneado.');
-      }
+      db.ref('baneados/' + argumento).remove();
+      alert(`Usuario ${argumento} desbaneado.`);
       return true;
     }
 
@@ -180,14 +184,14 @@
     if (text === '') return;
 
     if (estaBaneado(username)) {
-      alert(`Estás baneado del chat. Razón: ${bannedUsers[username]}`);
+      alert(`Estás baneado del chat.\nRazón: ${bannedUsers[username]}`);
       input.value = '';
       return;
     }
 
     if (text.startsWith('!')) {
-      const comandoProcesado = procesarComando(text);
-      if (comandoProcesado) {
+      const cmd = procesarComando(text);
+      if (cmd) {
         input.value = '';
         return;
       }
@@ -201,7 +205,7 @@
     input.value = '';
   }
 
-  // Escuchar nuevos mensajes y mostrarlos solo si no están baneados y no son comandos
+  // Escuchar nuevos mensajes, mostrar solo si no son baneados y no comandos
   db.ref('mensajes').on('child_added', snapshot => {
     const msg = snapshot.val();
     if (estaBaneado(msg.user)) return;
@@ -214,10 +218,7 @@
     if (e.key === 'Enter') enviarMensaje();
   });
 
-  // Al cargar la página, si el usuario está baneado, avisar
-  if (estaBaneado(username)) {
-    alert(`Estás baneado del chat. Razón: ${bannedUsers[username]}`);
-  }
+  cargarBaneados();
 </script>
 
 </body>
