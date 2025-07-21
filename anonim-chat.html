@@ -27,6 +27,10 @@
       background: #000;
       position: relative;
       z-index: 1;
+      width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: 8px;
     }
     .message {
       margin-bottom: 8px;
@@ -45,6 +49,7 @@
       color: #66ff66;
       position: relative;
       z-index: 1;
+      border-radius: 4px;
     }
     #sendBtn {
       padding: 10px 15px;
@@ -55,6 +60,13 @@
       font-weight: bold;
       position: relative;
       z-index: 1;
+      border-radius: 4px;
+    }
+    h2 {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 15px;
     }
   </style>
 </head>
@@ -62,11 +74,13 @@
 
 <canvas id="matrix"></canvas>
 
-<h2 style="position: relative; z-index: 1;">Chat Anónimo IbericaRP</h2>
+<h2>Chat Anónimo IbericaRP</h2>
 <div id="chat"></div>
 
-<input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
-<button id="sendBtn">Enviar</button>
+<div style="text-align:center;">
+  <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
+  <button id="sendBtn">Enviar</button>
+</div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -99,7 +113,7 @@
   }
   setInterval(drawMatrix, 33);
 
-  // Config Firebase (con databaseURL correcto)
+  // Config Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
     authDomain: "ibericachatdrknt.firebaseapp.com",
@@ -114,16 +128,14 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Clave maestra para desbanear
-  const masterPassword = "marqui1023"; // Cambia esta clave a la que quieras
-
   // Admins fijos
   const admins = ['Anon4397', 'Anon7919'];
 
-  // Cargar baneados, timeouts y contador de timeouts de localStorage o crear objetos vacíos
+  // Cargar baneados, timeouts, contador de timeouts y contraseñas de baneados de localStorage o crear objetos vacíos
   let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || {};
   let timeoutUsers = JSON.parse(localStorage.getItem('timeoutUsers')) || {};
   let timeoutCount = JSON.parse(localStorage.getItem('timeoutCount')) || {};
+  let banPasswords = JSON.parse(localStorage.getItem('banPasswords')) || {};
 
   // Obtener o crear usuario
   let username = localStorage.getItem('anonUser');
@@ -156,7 +168,7 @@
     document.body.removeChild(element);
   }
 
-  // Guardar baneados, timeouts y contador en localStorage
+  // Guardar baneados, timeouts, contador y contraseñas en localStorage
   function guardarBaneados() {
     localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
   }
@@ -165,6 +177,9 @@
   }
   function guardarTimeoutCount() {
     localStorage.setItem('timeoutCount', JSON.stringify(timeoutCount));
+  }
+  function guardarBanPasswords() {
+    localStorage.setItem('banPasswords', JSON.stringify(banPasswords));
   }
 
   // Comprobar si usuario está baneado
@@ -184,177 +199,15 @@
     return true;
   }
 
-  // Añadir timeout a usuario (1 minuto). Si llega a 5 timeouts, se banea indefinidamente
-  function ponerTimeout(user) {
-    if (!timeoutCount[user]) timeoutCount[user] = 0;
-    timeoutCount[user]++;
-    guardarTimeoutCount();
-
-    if (timeoutCount[user] >= 5) {
-      bannedUsers[user] = 'Has superado el máximo de timeouts (5)';
-      guardarBaneados();
-      alert(`Usuario ${user} baneado indefinidamente por exceder timeouts.`);
-    } else {
-      const now = Date.now();
-      timeoutUsers[user] = now + 60000; // 1 minuto
-      guardarTimeouts();
-      alert(`Timeout puesto a ${user}. (${timeoutCount[user]} de 5)`);
-    }
-  }
-
-  // Obtener lista de usuarios únicos desde Firebase
-  async function obtenerUsuarios() {
-    const snapshot = await db.ref('mensajes').once('value');
-    const data = snapshot.val() || {};
-    const usuariosSet = new Set();
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        usuariosSet.add(data[key].user);
-      }
-    }
-    return Array.from(usuariosSet);
-  }
-
-  // Procesar comandos (solo admins)
-  async function procesarComando(text) {
-    const partes = text.trim().split(' ');
-    const comando = partes[0].toLowerCase();
-    const argumento = partes[1];
-    const razon = partes.slice(2).join(' ') || 'Sin razón';
-
-    if (!admins.includes(username)) {
-      alert('No tienes permisos para usar comandos.');
-      return true;
-    }
-
-    if (comando === '!t1meout') {
-      if (!argumento) {
-        alert('Debes indicar un usuario para poner timeout.');
-        return true;
-      }
-      if (admins.includes(argumento)) {
-        alert('No puedes poner timeout a un administrador.');
-        return true;
-      }
-      ponerTimeout(argumento);
-      return true;
-    }
-
-    if (comando === '!unt1meout') {
-      if (!argumento) {
-        alert('Debes indicar un usuario para quitar timeout.');
-        return true;
-      }
-      if (timeoutUsers.hasOwnProperty(argumento)) {
-        delete timeoutUsers[argumento];
-        guardarTimeouts();
-        alert(`Timeout quitado a ${argumento}`);
-      } else {
-        alert('El usuario no está en timeout.');
-      }
-      return true;
-    }
-
-    if (comando === '!list4time') {
-      let texto = 'Usuarios en timeout:\n\n';
-      for (const user in timeoutUsers) {
-        const remaining = Math.max(0, Math.floor((timeoutUsers[user] - Date.now()) / 1000));
-        texto += `${user} - Tiempo restante: ${remaining} segundos\n`;
-      }
-      if (texto === 'Usuarios en timeout:\n\n') texto += 'No hay usuarios en timeout.';
-      descargarTexto('usuarios_timeout.txt', texto);
-      return true;
-    }
-
-    if (comando === '!list4users') {
-      const usuarios = await obtenerUsuarios();
-      let texto = 'Usuarios que se han conectado:\n\n';
-      usuarios.forEach(u => texto += u + '\n');
-      if (usuarios.length === 0) texto += 'No hay usuarios registrados.';
-      descargarTexto('usuarios_conectados.txt', texto);
-      return true;
-    }
-
-    return false;
-  }
-
-  // Palabras prohibidas (ejemplos en español con tilde y sin)
-const bannedWords = [
-  'puta', 'putá', 'puto', 'putó', 'putos', 'putós', 'putas', 'putás',
-  'mierda', 'mierdá',
-  'coño', 'coño', // sin tilde es raro, pero lo dejo igual
-  'gilipollas',
-  'joder',
-  'cabron', 'cabrón',
-  'cabrona',
-  'cabrones', 'cabrónes',
-  'culo',
-  'polla',
-  'pene',
-  'verga',
-  'chingar',
-  'chingado', 'chingadó',
-  'chingada', 'chingáda',
-  'chingados', 'chingádos',
-  'chingonas', 'chingónas',
-  'chingón', 'chingon',
-  'hostia',
-  'zorra',
-  'tonto',
-  'tonta',
-  'imbecil',
-  'idiota',
-  'subnormal',
-  'bastardo',
-  'estupido', 'estúpido',
-  'pendejo',
-  'pendeja',
-  'tarado',
-  'tarada',
-  'maldito',
-  'maldita',
-  'puta madre',
-  'hijo de puta',
-  'pinche',
-  'carajo',
-  'maricón', 'maricon',
-  'maricona',
-  'mariconez',
-  'pedo',
-  'pedocha',
-  'mamón', 'mamon',
-  'puta que te parió', 'puta que te pario',
-  'me cago en',
-  'me cago en todo',
-  'la concha de tu madre',
-  'cojones',
-  'puta mierda',
-  'mierda de mierda',
-  'facha',
-  'nazi',
-  'racista',
-  'homofobo', 'homófobo',
-  'terrorista',
-  'cabronazo',
-  'chinga tu madre',
-  'malparido',
-  'malparida',
-  'chupapollas',
-  'pajero',
-  'pajera',
-  'cerdo',
-  'cerda',
-  'bicho raro',
-  'puta de mierda'
-];
-
   // Función para pedir clave y desbanear
   function pedirClaveDesban() {
     const clave = prompt('Estás baneado. Introduce la clave para desbanearte:');
     if (clave === null) return false; // Canceló
-    if (clave === masterPassword) {
+    if (banPasswords[username] && clave === banPasswords[username]) {
       delete bannedUsers[username];
+      delete banPasswords[username];
       guardarBaneados();
+      guardarBanPasswords();
       alert('Clave correcta. Has sido desbaneado.');
       return true;
     } else {
@@ -390,16 +243,7 @@ const bannedWords = [
       }
     }
 
-    // Comprobar palabras prohibidas
-    const textoMinuscula = text.toLowerCase();
-    for (const palabra of bannedWords) {
-      if (textoMinuscula.includes(palabra)) {
-        alert('Mensaje contiene palabra prohibida. Se te pone timeout 1 minuto.');
-        ponerTimeout(username);
-        input.value = '';
-        return;
-      }
-    }
+    // Aquí podrías añadir chequeo de palabras prohibidas si quieres
 
     db.ref('mensajes').push({
       user: username,
@@ -417,6 +261,51 @@ const bannedWords = [
     if (msg.text.startsWith('!')) return;
     mostrarMensaje(msg.user, msg.text);
   });
+
+  // Procesar comandos (solo admins)
+  async function procesarComando(text) {
+    const partes = text.trim().split(' ');
+    const comando = partes[0].toLowerCase();
+
+    if (!admins.includes(username)) {
+      alert('No tienes permisos para usar comandos.');
+      return true;
+    }
+
+    if (comando === '!list4users') {
+      const usuarios = await obtenerUsuarios();
+      let texto = 'Usuarios que se han conectado:\n\n';
+      usuarios.forEach(u => texto += u + '\n');
+      if (usuarios.length === 0) texto += 'No hay usuarios registrados.';
+      descargarTexto('usuarios_conectados.txt', texto);
+      return true;
+    }
+
+    if (comando === '!list4banpass') {
+      let texto = 'Usuarios baneados con contraseñas de desbaneo:\n\n';
+      for (const user in bannedUsers) {
+        texto += `${user} - Razón: ${bannedUsers[user]} - Clave: ${banPasswords[user] || 'No asignada'}\n`;
+      }
+      if (texto === 'Usuarios baneados con contraseñas de desbaneo:\n\n') texto += 'No hay usuarios baneados.';
+      descargarTexto('baneados_con_clave.txt', texto);
+      return true;
+    }
+
+    return false;
+  }
+
+  // Obtener lista de usuarios únicos desde Firebase
+  async function obtenerUsuarios() {
+    const snapshot = await db.ref('mensajes').once('value');
+    const data = snapshot.val() || {};
+    const usuariosSet = new Set();
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        usuariosSet.add(data[key].user);
+      }
+    }
+    return Array.from(usuariosSet);
+  }
 
   sendBtn.addEventListener('click', enviarMensaje);
   input.addEventListener('keypress', e => {
