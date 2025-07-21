@@ -2,13 +2,28 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Chat Anónimo con Timeout y Moderación</title>
+  <title>Chat Anónimo con Timeout y Moderación - Fondo Matrix</title>
   <style>
-    body {
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: black;
+      overflow: hidden;
       font-family: monospace;
-      background-color: #121212;
       color: #66ff66;
+    }
+    #matrix {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+      background: black;
+    }
+    #chat-container {
+      position: relative;
+      z-index: 1;
       padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
     }
     #chat {
       max-height: 400px;
@@ -16,7 +31,8 @@
       border: 1px solid #0f0;
       padding: 10px;
       margin-bottom: 10px;
-      background: #000;
+      background: rgba(0,0,0,0.75);
+      color: #66ff66;
     }
     .message {
       margin-bottom: 8px;
@@ -46,17 +62,66 @@
 </head>
 <body>
 
-<h2>Chat Anónimo con Timeout y Moderación</h2>
-<div id="chat"></div>
+<canvas id="matrix"></canvas>
 
-<input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
-<button id="sendBtn">Enviar</button>
+<div id="chat-container">
+  <h2>Chat Anónimo con Timeout y Moderación</h2>
+  <div id="chat"></div>
+  <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
+  <button id="sendBtn">Enviar</button>
+</div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
+  // Matrix Background effect
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  let columns;
+  let drops;
+
+  function setup() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    columns = Math.floor(width / 20);
+    drops = [];
+    for (let i = 0; i < columns; i++) {
+      drops[i] = Math.floor(Math.random() * height / 20);
+    }
+  }
+
+  const letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ$%#@*".split('');
+
+  function draw() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#0F0';
+    ctx.font = '20px monospace';
+
+    for (let i = 0; i < columns; i++) {
+      const text = letters[Math.floor(Math.random() * letters.length)];
+      ctx.fillText(text, i * 20, drops[i] * 20);
+
+      if (drops[i] * 20 > height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  setup();
+  setInterval(draw, 50);
+  window.addEventListener('resize', () => {
+    setup();
+  });
+
+  // --- CHAT SCRIPT ---
+
   // Config Firebase (con databaseURL correcto)
   const firebaseConfig = {
     apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
