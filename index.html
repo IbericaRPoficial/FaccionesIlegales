@@ -20,6 +20,21 @@
       z-index: 0;
     }
 
+    #titulo-matrix {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px;
+      font-weight: bold;
+      color: #0f0;
+      text-shadow: 0 0 10px #0f0;
+      z-index: 10;
+      font-family: monospace;
+      letter-spacing: 3px;
+      white-space: nowrap;
+    }
+
     .terminal {
       position: absolute;
       top: 20%;
@@ -90,12 +105,14 @@
 <body>
 
 <canvas id="matrix"></canvas>
+<div id="titulo-matrix"></div>
 
 <div class="terminal">
   <div class="command" onclick="pedirClave('robos')">ROBOS</div>
   <div class="command" onclick="pedirClave('niveles')">NIVELES</div>
   <div class="command" onclick="pedirClave('hacker')">HACKER</div>
-  <div class="command" onclick="pedirClave('terminado')">TERMINADO</div>
+  <div class="command" onclick="pedirClave('preliminares')">PRELIMINARES</div>
+  <div class="command" onclick="irDirecto('normativa.html')">NORMATIVA</div>
 </div>
 
 <div id="popup">
@@ -107,7 +124,7 @@
 <div id="message"></div>
 
 <script>
-  // === Fondo estilo Matrix ===
+  // Efecto Matrix
   const canvas = document.getElementById('matrix');
   const ctx = canvas.getContext('2d');
   canvas.height = window.innerHeight;
@@ -134,12 +151,35 @@
 
   setInterval(drawMatrix, 33);
 
-  // === Contraseñas y rutas ===
+  // Título con animación tipo hacker
+  const hackerTitle = "FACCIONES ILEGALES";
+  const hackerChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  const tituloElement = document.getElementById("titulo-matrix");
+
+  let i = 0;
+  function hackerEffect() {
+    let interval = setInterval(() => {
+      let displayed = "";
+      for (let j = 0; j < hackerTitle.length; j++) {
+        if (j < i) {
+          displayed += hackerTitle[j];
+        } else {
+          displayed += hackerChars[Math.floor(Math.random() * hackerChars.length)];
+        }
+      }
+      tituloElement.innerText = displayed;
+      if (i >= hackerTitle.length) clearInterval(interval);
+      i++;
+    }, 150);
+  }
+  hackerEffect();
+
+  // Lógica de contraseñas
   const claves = {
     robos: { clave: "clave123", url: "robos.html" },
     niveles: { clave: "nivel42", url: "niveles.html" },
     hacker: { clave: "rootaccess", url: "terminalhacker.html" },
-    terminado: { clave: "finalizado", url: "terminado.html" }
+    preliminares: { clave: "premision", url: "preliminares.html" }
   };
 
   let seccionActual = "";
@@ -169,6 +209,11 @@
     } else {
       alert("❌ Contraseña incorrecta.");
     }
+  }
+
+  // Acceso directo sin contraseña
+  function irDirecto(url) {
+    window.location.href = url;
   }
 </script>
 
