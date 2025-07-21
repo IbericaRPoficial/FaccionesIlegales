@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Chat Anónimo IbercaRP</title>
+  <title>Chat Anónimo con Timeout, Ban y Desban por Clave</title>
   <style>
     body {
       font-family: monospace;
@@ -62,7 +62,7 @@
 
 <canvas id="matrix"></canvas>
 
-<h2 style="position: relative; z-index: 1;">Chat Anónimo IbericaRP</h2>
+<h2 style="position: relative; z-index: 1;">Chat Anónimo con Timeout, Ban y Desban por Clave</h2>
 <div id="chat"></div>
 
 <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
@@ -114,12 +114,16 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
+  // Clave maestra para desbanear
+  const masterPassword = "claveSecreta123"; // Cambia esta clave a la que quieras
+
   // Admins fijos
   const admins = ['Anon4397', 'Anon7919'];
 
-  // Cargar baneados y timeouts de localStorage o crear objetos vacíos
+  // Cargar baneados, timeouts y contador de timeouts de localStorage o crear objetos vacíos
   let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || {};
   let timeoutUsers = JSON.parse(localStorage.getItem('timeoutUsers')) || {};
+  let timeoutCount = JSON.parse(localStorage.getItem('timeoutCount')) || {};
 
   // Obtener o crear usuario
   let username = localStorage.getItem('anonUser');
@@ -152,12 +156,15 @@
     document.body.removeChild(element);
   }
 
-  // Guardar baneados y timeouts en localStorage
+  // Guardar baneados, timeouts y contador en localStorage
   function guardarBaneados() {
     localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
   }
   function guardarTimeouts() {
     localStorage.setItem('timeoutUsers', JSON.stringify(timeoutUsers));
+  }
+  function guardarTimeoutCount() {
+    localStorage.setItem('timeoutCount', JSON.stringify(timeoutCount));
   }
 
   // Comprobar si usuario está baneado
@@ -177,11 +184,22 @@
     return true;
   }
 
-  // Añadir timeout a usuario (1 minuto)
+  // Añadir timeout a usuario (1 minuto). Si llega a 5 timeouts, se banea indefinidamente
   function ponerTimeout(user) {
-    const now = Date.now();
-    timeoutUsers[user] = now + 60000; // 60000ms = 1 minuto
-    guardarTimeouts();
+    if (!timeoutCount[user]) timeoutCount[user] = 0;
+    timeoutCount[user]++;
+    guardarTimeoutCount();
+
+    if (timeoutCount[user] >= 5) {
+      bannedUsers[user] = 'Has superado el máximo de timeouts (5)';
+      guardarBaneados();
+      alert(`Usuario ${user} baneado indefinidamente por exceder timeouts.`);
+    } else {
+      const now = Date.now();
+      timeoutUsers[user] = now + 60000; // 1 minuto
+      guardarTimeouts();
+      alert(`Timeout puesto a ${user}. (${timeoutCount[user]} de 5)`);
+    }
   }
 
   // Obtener lista de usuarios únicos desde Firebase
@@ -219,7 +237,6 @@
         return true;
       }
       ponerTimeout(argumento);
-      alert(`Usuario ${argumento} puesto en timeout 1 minuto. Razón: ${razon}`);
       return true;
     }
 
@@ -261,8 +278,8 @@
     return false;
   }
 
-  // Palabras prohibidas (puedes ampliar la lista)
- const bannedWords = [
+  // Palabras prohibidas (ejemplos en español con tilde y sin)
+const bannedWords = [
   'puta', 'putá', 'puto', 'putó', 'putos', 'putós', 'putas', 'putás',
   'mierda', 'mierdá',
   'coño', 'coño', // sin tilde es raro, pero lo dejo igual
@@ -331,6 +348,20 @@
   'puta de mierda'
 ];
 
+  // Función para pedir clave y desbanear
+  function pedirClaveDesban() {
+    const clave = prompt('Estás baneado. Introduce la clave para desbanearte:');
+    if (clave === null) return false; // Canceló
+    if (clave === masterPassword) {
+      delete bannedUsers[username];
+      guardarBaneados();
+      alert('Clave correcta. Has sido desbaneado.');
+      return true;
+    } else {
+      alert('Clave incorrecta. Sigues baneado.');
+      return false;
+    }
+  }
 
   // Enviar mensaje
   async function enviarMensaje() {
@@ -338,9 +369,11 @@
     if (text === '') return;
 
     if (estaBaneado(username)) {
-      alert(`Estás baneado del chat. Razón: ${bannedUsers[username]}`);
-      input.value = '';
-      return;
+      const desbaneado = pedirClaveDesban();
+      if (!desbaneado) {
+        input.value = '';
+        return;
+      }
     }
 
     if (estaEnTimeout(username)) {
@@ -380,7 +413,7 @@
   db.ref('mensajes').on('child_added', snapshot => {
     const msg = snapshot.val();
     if (estaBaneado(msg.user)) return;
-    if (estaEnTimeout(msg.user)) return; // Opcional: no mostrar mensajes de usuarios en timeout (si quieres que se muestren, quita esta línea)
+    if (estaEnTimeout(msg.user)) return; // No mostrar mensajes de usuarios en timeout
     if (msg.text.startsWith('!')) return;
     mostrarMensaje(msg.user, msg.text);
   });
@@ -390,11 +423,13 @@
     if (e.key === 'Enter') enviarMensaje();
   });
 
-  // Al cargar la página, si el usuario está baneado, avisar
+  // Al cargar la página, si el usuario está baneado, avisar y pedir clave
   if (estaBaneado(username)) {
-    alert(`Estás baneado del chat. Razón: ${bannedUsers[username]}`);
+    const desbaneado = pedirClaveDesban();
+    if (!desbaneado) {
+      alert('No podrás enviar mensajes hasta que te desbanees.');
+    }
   }
-
 </script>
 
 </body>
