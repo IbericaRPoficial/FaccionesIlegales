@@ -128,6 +128,30 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
+  // Palabras malsonantes para banear o poner timeout
+  const bannedWords = [
+    'puta', 'putá', 'puto', 'putó', 'putos', 'putós', 'putas', 'putás',
+    'mierda', 'mierdá',
+    'coño', 'gilipollas', 'joder',
+    'cabron', 'cabrón', 'cabrona', 'cabrones', 'cabrónes',
+    'culo', 'polla', 'pene', 'verga',
+    'chingar', 'chingado', 'chingadó', 'chingada', 'chingáda',
+    'hostia', 'zorra', 'tonto', 'tonta',
+    'imbecil', 'idiota', 'subnormal', 'bastardo',
+    'estupido', 'estúpido', 'pendejo', 'pendeja',
+    'tarado', 'tarada', 'maldito', 'maldita',
+    'hijo de puta', 'puta madre', 'pinche', 'carajo',
+    'maricón', 'maricon', 'maricona',
+    'pedo', 'pedocha', 'mamón', 'mamon',
+    'cojones', 'facha', 'nazi', 'racista',
+    'homofobo', 'homófobo', 'terrorista',
+    'cabronazo', 'malparido', 'malparida',
+    'chupapollas', 'pajero', 'pajera',
+    'cerdo', 'cerda',
+    'bicho raro',
+    'puta de mierda'
+  ];
+
   // Admins fijos
   const admins = ['Anon4397', 'Anon7919'];
 
@@ -216,6 +240,32 @@
     }
   }
 
+  // Función para poner timeout (1 minuto) y, si alcanza 5, banear con contraseña aleatoria
+  function ponerTimeout(user) {
+    if (!timeoutCount[user]) timeoutCount[user] = 0;
+    timeoutCount[user]++;
+    guardarTimeoutCount();
+
+    if (timeoutCount[user] >= 5) {
+      bannedUsers[user] = 'Excedió el máximo de timeouts (5)';
+      // Generar contraseña aleatoria para desbaneado
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let pass = '';
+      for (let i = 0; i < 8; i++) {
+        pass += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      banPasswords[user] = pass;
+      guardarBaneados();
+      guardarBanPasswords();
+      alert(`Usuario ${user} baneado indefinidamente.\nClave para desbanear: ${pass}`);
+    } else {
+      const now = Date.now();
+      timeoutUsers[user] = now + 60000; // 1 minuto timeout
+      guardarTimeouts();
+      alert(`Timeout puesto a ${user}. (${timeoutCount[user]} de 5)`);
+    }
+  }
+
   // Enviar mensaje
   async function enviarMensaje() {
     const text = input.value.trim();
@@ -235,6 +285,17 @@
       return;
     }
 
+    // Comprobar palabras prohibidas para poner timeout
+    const textoMinuscula = text.toLowerCase();
+    for (const palabra of bannedWords) {
+      if (textoMinuscula.includes(palabra)) {
+        alert('Mensaje contiene palabra prohibida. Se te pone timeout 1 minuto.');
+        ponerTimeout(username);
+        input.value = '';
+        return;
+      }
+    }
+
     if (text.startsWith('!')) {
       const comandoProcesado = await procesarComando(text);
       if (comandoProcesado) {
@@ -242,8 +303,6 @@
         return;
       }
     }
-
-    // Aquí podrías añadir chequeo de palabras prohibidas si quieres
 
     db.ref('mensajes').push({
       user: username,
