@@ -114,16 +114,16 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Clave maestra para desbanear
-  const masterPassword = "claveSecreta123"; // Cambia esta clave a la que quieras
+  // Clave maestra para desbanear (solo para bans manuales, no para 3 avisos)
+  const masterPassword = "claveSecreta123";
 
   // Admins fijos
   const admins = ['Anon4397', 'Anon7919'];
 
-  // Cargar baneados, timeouts y contador de timeouts de localStorage o crear objetos vacíos
+  // Cargar baneados, timeouts, avisos y contador de avisos de localStorage o crear objetos vacíos
   let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || {};
   let timeoutUsers = JSON.parse(localStorage.getItem('timeoutUsers')) || {};
-  let timeoutCount = JSON.parse(localStorage.getItem('timeoutCount')) || {};
+  let avisosCount = JSON.parse(localStorage.getItem('avisosCount')) || {};
 
   // Obtener o crear usuario
   let username = localStorage.getItem('anonUser');
@@ -145,26 +145,15 @@
     chatDiv.scrollTop = chatDiv.scrollHeight;
   }
 
-  // Descargar fichero de texto
-  function descargarTexto(filename, text) {
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    element.setAttribute('download', filename);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  }
-
-  // Guardar baneados, timeouts y contador en localStorage
+  // Guardar baneados, timeouts y avisos en localStorage
   function guardarBaneados() {
     localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
   }
   function guardarTimeouts() {
     localStorage.setItem('timeoutUsers', JSON.stringify(timeoutUsers));
   }
-  function guardarTimeoutCount() {
-    localStorage.setItem('timeoutCount', JSON.stringify(timeoutCount));
+  function guardarAvisos() {
+    localStorage.setItem('avisosCount', JSON.stringify(avisosCount));
   }
 
   // Comprobar si usuario está baneado
@@ -184,35 +173,157 @@
     return true;
   }
 
-  // Añadir timeout a usuario (1 minuto). Si llega a 5 timeouts, se banea indefinidamente
-  function ponerTimeout(user) {
-    if (!timeoutCount[user]) timeoutCount[user] = 0;
-    timeoutCount[user]++;
-    guardarTimeoutCount();
+  // Palabras prohibidas completas (incluye tildes, plurales y variaciones)
+  const bannedWords = [
+    'puta', 'putá', 'puto', 'putó', 'putos', 'putós', 'putas', 'putás',
+    'mierda', 'mierdá',
+    'coño',
+    'gilipollas',
+    'joder',
+    'cabrón', 'cabron', 'cabrona',
+    'cabrones', 'cabrónes',
+    'culo',
+    'polla',
+    'pene',
+    'verga',
+    'chingar', 'chingado', 'chingadó', 'chingada', 'chingáda', 'chingados', 'chingádos',
+    'chingonas', 'chingónas', 'chingón', 'chingon',
+    'hostia',
+    'zorra',
+    'tonto', 'tonta',
+    'imbecil',
+    'idiota',
+    'subnormal',
+    'bastardo',
+    'estúpido', 'estupido',
+    'pendejo', 'pendeja',
+    'tarado', 'tarada',
+    'maldito', 'maldita',
+    'puta madre',
+    'hijo de puta',
+    'pinche',
+    'carajo',
+    'maricón', 'maricon',
+    'maricona',
+    'mariconez',
+    'pedo',
+    'pedocha',
+    'mamón', 'mamon',
+    'puta que te parió', 'puta que te pario',
+    'me cago en',
+    'me cago en todo',
+    'la concha de tu madre',
+    'cojones',
+    'puta mierda',
+    'mierda de mierda',
+    'facha',
+    'nazi',
+    'racista',
+    'homófobo', 'homofobo',
+    'terrorista',
+    'cabronazo',
+    'chinga tu madre',
+    'malparido', 'malparida',
+    'chupapollas',
+    'pajero', 'pajera',
+    'cerdo', 'cerda',
+    'bicho raro',
+    'puta de mierda',
+    'fuck', 'shit', 'bitch', 'asshole', 'damn', 'bastard', 'bollocks'
+  ];
 
-    if (timeoutCount[user] >= 5) {
-      bannedUsers[user] = 'Has superado el máximo de timeouts (5)';
+  // Añadir aviso a usuario (timeout 5 minutos). Al tercer aviso, baneo permanente sin clave
+  function ponerTimeout(user) {
+    if (!avisosCount[user]) avisosCount[user] = 0;
+    avisosCount[user]++;
+    guardarAvisos();
+
+    if (avisosCount[user] >= 3) {
+      bannedUsers[user] = 'Baneo permanente por 3 avisos';
       guardarBaneados();
-      alert(`Usuario ${user} baneado indefinidamente por exceder timeouts.`);
+      alert(`Usuario ${user} baneado PERMANENTEMENTE tras 3 avisos.`);
     } else {
       const now = Date.now();
-      timeoutUsers[user] = now + 60000; // 1 minuto
+      const timeoutDuracion = 5 * 60 * 1000; // 5 minutos en ms
+      timeoutUsers[user] = now + timeoutDuracion;
       guardarTimeouts();
-      alert(`Timeout puesto a ${user}. (${timeoutCount[user]} de 5)`);
+      alert(`Aviso ${avisosCount[user]} puesto a ${user}. Al 3er aviso, baneo permanente. Timeout de 5 minutos.`);
+
+      // Programar alerta cuando el timeout termine
+      setTimeout(() => {
+        if (timeoutUsers[user] && Date.now() >= timeoutUsers[user]) {
+          delete timeoutUsers[user];
+          guardarTimeouts();
+          if (!estaBaneado(user)) {
+            alert(`Usuario ${user}, tu timeout de 5 minutos ha terminado. Ya puedes enviar mensajes de nuevo.`);
+          }
+        }
+      }, timeoutDuracion);
     }
   }
 
-  // Obtener lista de usuarios únicos desde Firebase
-  async function obtenerUsuarios() {
-    const snapshot = await db.ref('mensajes').once('value');
-    const data = snapshot.val() || {};
-    const usuariosSet = new Set();
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        usuariosSet.add(data[key].user);
+  // Función para pedir clave y desbanear (solo para bans manuales, no para baneo por 3 avisos)
+  function pedirClaveDesban() {
+    const clave = prompt('Estás baneado. Introduce la clave para desbanearte:');
+    if (clave === null) return false; // Canceló
+    if (clave === masterPassword) {
+      delete bannedUsers[username];
+      avisosCount[username] = 0; // Reset avisos si se desbanea manualmente
+      guardarBaneados();
+      guardarAvisos();
+      alert('Clave correcta. Has sido desbaneado.');
+      return true;
+    } else {
+      alert('Clave incorrecta. Sigues baneado.');
+      return false;
+    }
+  }
+
+  // Enviar mensaje
+  async function enviarMensaje() {
+    const text = input.value.trim();
+    if (text === '') return;
+
+    if (estaBaneado(username)) {
+      const desbaneado = pedirClaveDesban();
+      if (!desbaneado) {
+        input.value = '';
+        return;
       }
     }
-    return Array.from(usuariosSet);
+
+    if (estaEnTimeout(username)) {
+      alert('Estás en timeout. Espera 5 minutos antes de enviar otro mensaje.');
+      input.value = '';
+      return;
+    }
+
+    // Procesar comandos solo admins
+    if (text.startsWith('!')) {
+      const comandoProcesado = await procesarComando(text);
+      if (comandoProcesado) {
+        input.value = '';
+        return;
+      }
+    }
+
+    // Comprobar palabras prohibidas
+    const textoMinuscula = text.toLowerCase();
+    for (const palabra of bannedWords) {
+      if (textoMinuscula.includes(palabra)) {
+        alert('Mensaje contiene palabra prohibida. Se te pone aviso y timeout de 5 minutos.');
+        ponerTimeout(username);
+        input.value = '';
+        return;
+      }
+    }
+
+    db.ref('mensajes').push({
+      user: username,
+      text: text
+    });
+
+    input.value = '';
   }
 
   // Procesar comandos (solo admins)
@@ -278,73 +389,28 @@
     return false;
   }
 
-  // Palabras prohibidas (ejemplos en español con tilde y sin)
-  const bannedWords = [
-    'mierda', 'mierda', 'puta', 'puto', 'cabron', 'cabrón',
-    'gilipollas', 'joder', 'coño', 'hostia', 'pendejo', 'pendeja',
-    'puta', 'polla', 'culo', 'verga', 'chingar', 'chingada',
-    'fuck', 'shit', 'bitch', 'asshole', 'damn', 'bastard', 'bollocks'
-  ];
-
-  // Función para pedir clave y desbanear
-  function pedirClaveDesban() {
-    const clave = prompt('Estás baneado. Introduce la clave para desbanearte:');
-    if (clave === null) return false; // Canceló
-    if (clave === masterPassword) {
-      delete bannedUsers[username];
-      guardarBaneados();
-      alert('Clave correcta. Has sido desbaneado.');
-      return true;
-    } else {
-      alert('Clave incorrecta. Sigues baneado.');
-      return false;
+  // Obtener lista de usuarios únicos desde Firebase
+  async function obtenerUsuarios() {
+    const snapshot = await db.ref('mensajes').once('value');
+    const data = snapshot.val() || {};
+    const usuariosSet = new Set();
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        usuariosSet.add(data[key].user);
+      }
     }
+    return Array.from(usuariosSet);
   }
 
-  // Enviar mensaje
-  async function enviarMensaje() {
-    const text = input.value.trim();
-    if (text === '') return;
-
-    if (estaBaneado(username)) {
-      const desbaneado = pedirClaveDesban();
-      if (!desbaneado) {
-        input.value = '';
-        return;
-      }
-    }
-
-    if (estaEnTimeout(username)) {
-      alert('Estás en timeout. Espera 1 minuto antes de enviar otro mensaje.');
-      input.value = '';
-      return;
-    }
-
-    if (text.startsWith('!')) {
-      const comandoProcesado = await procesarComando(text);
-      if (comandoProcesado) {
-        input.value = '';
-        return;
-      }
-    }
-
-    // Comprobar palabras prohibidas
-    const textoMinuscula = text.toLowerCase();
-    for (const palabra of bannedWords) {
-      if (textoMinuscula.includes(palabra)) {
-        alert('Mensaje contiene palabra prohibida. Se te pone timeout 1 minuto.');
-        ponerTimeout(username);
-        input.value = '';
-        return;
-      }
-    }
-
-    db.ref('mensajes').push({
-      user: username,
-      text: text
-    });
-
-    input.value = '';
+  // Descargar fichero de texto
+  function descargarTexto(filename, text) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   }
 
   // Escuchar nuevos mensajes
@@ -361,7 +427,7 @@
     if (e.key === 'Enter') enviarMensaje();
   });
 
-  // Al cargar la página, si el usuario está baneado, avisar y pedir clave
+  // Al cargar la página, si el usuario está baneado, avisar y pedir clave (solo para bans manuales)
   if (estaBaneado(username)) {
     const desbaneado = pedirClaveDesban();
     if (!desbaneado) {
