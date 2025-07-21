@@ -81,6 +81,13 @@
     chatDiv.appendChild(div);
     chatDiv.scrollTop = chatDiv.scrollHeight;
   });
+
+  // Enviar mensaje con tecla Enter
+  document.getElementById("messageInput").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      sendMessage();
+    }
+  });
 </script>
 
 </body>
