@@ -1,128 +1,87 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Chat Anónimo Darknet</title>
+  <meta charset="UTF-8">
+  <title>Chat Anónimo</title>
   <style>
     body {
-      background: #0b0c0d;
-      color: #0f0;
-      font-family: monospace;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
       padding: 20px;
     }
-    #messages {
-      height: 300px;
+    #chat {
+      max-height: 400px;
       overflow-y: auto;
-      border: 1px solid #0f0;
+      border: 1px solid #444;
       padding: 10px;
       margin-bottom: 10px;
-      background: #020202;
+      background: #1e1e1e;
     }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      background: #000;
-      color: #0f0;
-      border: 1px solid #0f0;
-      font-family: monospace;
+    .message {
+      margin-bottom: 10px;
     }
-    button:hover {
-      background: #0f0;
-      color: #000;
-      cursor: pointer;
-    }
-    .msg-user {
-      font-weight: bold;
+    .anon {
+      color: #66ff66;
     }
   </style>
 </head>
 <body>
-  <h1>💬 Chat Anónimo Darknet</h1>
-  <div id="messages"></div>
-  <input id="msg" placeholder="Escribe un mensaje" autocomplete="off" />
-  <button id="sendBtn">Enviar</button>
 
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js"></script>
+<h2>Chat Anónimo</h2>
+<div id="chat"></div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
-      authDomain: "ibericachatdrknt.firebaseapp.com",
-      projectId: "ibericachatdrknt",
-      storageBucket: "ibericachatdrknt.firebasestorage.app",
-      messagingSenderId: "933093011275",
-      appId: "1:933093011275:web:645bd6ea82dcc022fc02ce",
-      measurementId: "G-D0RNWWQXLS"
-    };
+<input type="text" id="messageInput" placeholder="Escribe tu mensaje..." />
+<button onclick="sendMessage()">Enviar</button>
 
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    // Generar usuario y color único localStorage
-    let userName = localStorage.getItem("anonUser");
-    let userColor = localStorage.getItem("anonUserColor");
+<script>
+  // Configuración Firebase con databaseURL CORRECTO
+  const firebaseConfig = {
+    apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
+    authDomain: "ibericachatdrknt.firebaseapp.com",
+    databaseURL: "https://ibericachatdrknt-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "ibericachatdrknt",
+    storageBucket: "ibericachatdrknt.appspot.com",
+    messagingSenderId: "933093011275",
+    appId: "1:933093011275:web:645bd6ea82dcc022fc02ce",
+    measurementId: "G-D0RNWWQXLS"
+  };
 
-    if (!userName) {
-      userName = "Anon" + (Math.floor(Math.random() * 9000) + 1000);
-      localStorage.setItem("anonUser", userName);
-    }
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    if (!userColor) {
-      const colors = ['#00ff00', '#00ffff', '#ff00ff', '#ffff00', '#ff5500']; 
-      userColor = colors[Math.floor(Math.random() * colors.length)];
-      localStorage.setItem("anonUserColor", userColor);
-    }
+  // Guardar y reutilizar usuario en localStorage
+  let username = localStorage.getItem("anonUser");
+  if (!username) {
+    username = "Anon" + Math.floor(Math.random() * 10000);
+    localStorage.setItem("anonUser", username);
+  }
 
-    const messagesDiv = document.getElementById("messages");
-    const input = document.getElementById("msg");
-    const sendBtn = document.getElementById("sendBtn");
-
-    // Escuchar nuevos mensajes
-    const mensajesRef = db.ref('mensajes');
-    mensajesRef.on('child_added', (data) => {
-      const message = data.val();
-      const p = document.createElement('p');
-
-      let color;
-      if (message.user === userName) {
-        color = userColor;
-      } else {
-        color = message.color || '#0ff';
-      }
-
-      p.innerHTML = `<span class="msg-user" style="color:${color}">${message.user}:</span> ${escapeHtml(message.text)}`;
-      messagesDiv.appendChild(p);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  function sendMessage() {
+    const msg = document.getElementById("messageInput").value;
+    if (msg.trim() === "") return;
+    db.ref("mensajes").push({
+      user: username,
+      text: msg
     });
+    document.getElementById("messageInput").value = "";
+  }
 
-    // Escapar HTML
-    function escapeHtml(text) {
-      return text.replace(/[&<>"']/g, (m) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      })[m]);
-    }
+  const chatDiv = document.getElementById("chat");
 
-    // Enviar mensaje
-    sendBtn.addEventListener('click', () => {
-      const text = input.value.trim();
-      if(text !== '') {
-        mensajesRef.push({ user: userName, text, color: userColor });
-        input.value = '';
-      }
-    });
+  db.ref("mensajes").on("child_added", function(snapshot) {
+    const msg = snapshot.val();
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.innerHTML = `<span class="anon">${msg.user}:</span> ${msg.text}`;
+    chatDiv.appendChild(div);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  });
+</script>
 
-    // Enviar con Enter
-    input.addEventListener('keypress', (e) => {
-      if(e.key === 'Enter') {
-        sendBtn.click();
-      }
-    });
-  </script>
 </body>
 </html>
