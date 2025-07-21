@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Terminal Hacker</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: #0f0;
+      font-family: monospace;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    .terminal {
+      position: absolute;
+      top: 20%;
+      right: 5%;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border: 2px solid #0f0;
+      border-radius: 8px;
+      z-index: 1;
+    }
+
+    .command {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #0f0;
+      cursor: pointer;
+      transition: background 0.3s;
+      text-align: center;
+    }
+
+    .command:hover {
+      background: #0f0;
+      color: black;
+    }
+
+    #popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: black;
+      border: 2px solid #0f0;
+      padding: 20px;
+      z-index: 2;
+      display: none;
+    }
+
+    #popup input {
+      background: black;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 5px;
+      width: 100%;
+    }
+
+    #popup button {
+      background: #0f0;
+      color: black;
+      border: none;
+      padding: 5px 10px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    #message {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      padding: 10px;
+      border: 1px solid #0f0;
+      display: none;
+      z-index: 3;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div class="terminal">
+  <div class="command" onclick="pedirClave('robos')">ROBOS</div>
+  <div class="command" onclick="pedirClave('niveles')">NIVELES</div>
+  <div class="command" onclick="pedirClave('hacker')">HACKER</div>
+  <div class="command" onclick="pedirClave('terminado')">TERMINADO</div>
+</div>
+
+<div id="popup">
+  <p id="popup-label">Introduce contraseña:</p>
+  <input type="password" id="passwordInput" />
+  <button onclick="verificarClave()">Entrar</button>
+</div>
+
+<div id="message"></div>
+
+<script>
+  // === Fondo estilo Matrix ===
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth;
+
+  let letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ$%#@*".split("");
+  let fontSize = 14;
+  let columns = canvas.width / fontSize;
+  let drops = Array(Math.floor(columns)).fill(1);
+
+  function drawMatrix() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0F0";
+    ctx.font = fontSize + "px monospace";
+
+    for (let i = 0; i < drops.length; i++) {
+      let text = letters[Math.floor(Math.random() * letters.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+
+  setInterval(drawMatrix, 33);
+
+  // === Contraseñas y rutas ===
+  const claves = {
+    robos: { clave: "clave123", url: "robos.html" },
+    niveles: { clave: "nivel42", url: "niveles.html" },
+    hacker: { clave: "rootaccess", url: "terminalhacker.html" },
+    terminado: { clave: "finalizado", url: "terminado.html" }
+  };
+
+  let seccionActual = "";
+
+  function pedirClave(seccion) {
+    seccionActual = seccion;
+    document.getElementById('popup').style.display = 'block';
+    document.getElementById('passwordInput').value = "";
+    document.getElementById('passwordInput').focus();
+    document.getElementById('popup-label').innerText = `Contraseña para "${seccion.toUpperCase()}"`;
+  }
+
+  function verificarClave() {
+    const entrada = document.getElementById('passwordInput').value;
+    const popup = document.getElementById('popup');
+    const mensaje = document.getElementById('message');
+    const acceso = claves[seccionActual];
+
+    if (entrada === acceso.clave) {
+      popup.style.display = 'none';
+      mensaje.innerText = `✔ Acceso concedido a ${seccionActual.toUpperCase()}`;
+      mensaje.style.display = 'block';
+      setTimeout(() => {
+        mensaje.style.display = 'none';
+        window.location.href = acceso.url;
+      }, 1000);
+    } else {
+      alert("❌ Contraseña incorrecta.");
+    }
+  }
+</script>
+
+</body>
+</html>
