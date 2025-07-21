@@ -1,180 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Chat Anónimo IbericaRP</title>
+  <meta charset="UTF-8">
+  <title>Chat Ibercia</title>
   <style>
     body {
-      font-family: monospace;
-      background-color: black;
-      color: #66ff66;
-      padding: 20px;
-      overflow: hidden;
-      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
     }
-    #matrix {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-    }
-    #chat {
-      max-height: 400px;
+    #chat-box {
+      border: 2px solid #444;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 600px;
+      height: 400px;
       overflow-y: auto;
-      border: 1px solid #0f0;
       padding: 10px;
-      margin-bottom: 10px;
-      background: #000;
-      position: relative;
-      z-index: 1;
+      background: #1a1a1a;
+      margin-bottom: 20px;
     }
-    .message {
-      margin-bottom: 8px;
-    }
-    .msg-user {
-      color: #66ff66;
-    }
-    .msg-other {
-      color: #00ffff;
-    }
-    #messageInput {
-      width: 80%;
+    #input {
+      width: 90%;
+      max-width: 600px;
       padding: 10px;
-      background: #222;
-      border: 1px solid #0f0;
-      color: #66ff66;
-      position: relative;
-      z-index: 1;
+      font-size: 16px;
     }
-    #sendBtn {
-      padding: 10px 15px;
-      background: #0f0;
-      border: none;
-      cursor: pointer;
-      color: black;
-      font-weight: bold;
-      position: relative;
-      z-index: 1;
+    #send {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
+  <h2>Chat Ibercia</h2>
+  <div id="chat-box"></div>
+  <input type="text" id="input" placeholder="Escribe tu mensaje...">
+  <button id="send">Enviar</button>
 
-<canvas id="matrix"></canvas>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<h2 style="position: relative; z-index: 1;">Chat Anónimo IbericaRP</h2>
-<div id="chat"></div>
+  <script>
+    // Configuración Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
+      authDomain: "ibericachatdrknt.firebaseapp.com",
+      databaseURL: "https://ibericachatdrknt-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "ibericachatdrknt",
+      storageBucket: "ibericachatdrknt.appspot.com",
+      messagingSenderId: "933093011275",
+      appId: "1:933093011275:web:645bd6ea82dcc022fc02ce",
+      measurementId: "G-D0RNWWQXLS"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-<input type="text" id="messageInput" placeholder="Escribe tu mensaje..." autocomplete="off" />
-<button id="sendBtn">Enviar</button>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-<script>
-  // Efecto Matrix en Canvas
-  const canvas = document.getElementById('matrix');
-  const ctx = canvas.getContext('2d');
-  canvas.height = window.innerHeight;
-  canvas.width = window.innerWidth;
-
-  let letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ$%#@*".split("");
-  let fontSize = 14;
-  let columns = canvas.width / fontSize;
-  let drops = Array(Math.floor(columns)).fill(1);
-
-  function drawMatrix() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0F0";
-    ctx.font = fontSize + "px monospace";
-
-    for (let i = 0; i < drops.length; i++) {
-      let text = letters[Math.floor(Math.random() * letters.length)];
-      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-      drops[i]++;
-    }
-  }
-  setInterval(drawMatrix, 33);
-
-  // Config Firebase (con databaseURL correcto)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAAihYPChiJC61hazahxbHKgv384UE9HUU",
-    authDomain: "ibericachatdrknt.firebaseapp.com",
-    databaseURL: "https://ibericachatdrknt-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "ibericachatdrknt",
-    storageBucket: "ibericachatdrknt.appspot.com",
-    messagingSenderId: "933093011275",
-    appId: "1:933093011275:web:645bd6ea82dcc022fc02ce",
-    measurementId: "G-D0RNWWQXLS"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  // Clave maestra para desbanear (solo para bans manuales, no para 3 avisos)
-  const masterPassword = "claveSecreta123";
-
-  // Admins fijos
-  const admins = ['Anon4397', 'Anon7919'];
-
-  // Cargar baneados, timeouts, avisos y contador de avisos de localStorage o crear objetos vacíos
-  let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || {};
-  let timeoutUsers = JSON.parse(localStorage.getItem('timeoutUsers')) || {};
-  let avisosCount = JSON.parse(localStorage.getItem('avisosCount')) || {};
-
-  // Obtener o crear usuario
-  let username = localStorage.getItem('anonUser');
-  if (!username) {
-    username = 'Anon' + Math.floor(Math.random() * 9000 + 1000);
-    localStorage.setItem('anonUser', username);
-  }
-
-  const chatDiv = document.getElementById('chat');
-  const input = document.getElementById('messageInput');
-  const sendBtn = document.getElementById('sendBtn');
-
-  // Mostrar mensaje en chat
-  function mostrarMensaje(user, text) {
-    const div = document.createElement('div');
-    div.classList.add('message');
-    div.innerHTML = `<span class="${user === username ? 'msg-user' : 'msg-other'}">${user}:</span> ${text}`;
-    chatDiv.appendChild(div);
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  }
-
-  // Guardar baneados, timeouts y avisos en localStorage
-  function guardarBaneados() {
-    localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
-  }
-  function guardarTimeouts() {
-    localStorage.setItem('timeoutUsers', JSON.stringify(timeoutUsers));
-  }
-  function guardarAvisos() {
-    localStorage.setItem('avisosCount', JSON.stringify(avisosCount));
-  }
-
-  // Comprobar si usuario está baneado
-  function estaBaneado(user) {
-    return bannedUsers.hasOwnProperty(user);
-  }
-
-  // Comprobar si usuario está en timeout y si el timeout expiró
-  function estaEnTimeout(user) {
-    if (!timeoutUsers.hasOwnProperty(user)) return false;
-    const timeoutEnd = timeoutUsers[user];
-    if (Date.now() > timeoutEnd) {
-      delete timeoutUsers[user];
-      guardarTimeouts();
-      return false;
-    }
-    return true;
-  }
-
-  // Palabras prohibidas completas (incluye tildes, plurales y variaciones)
-  const bannedWords = [
+    // Datos
+    const bannedWords =[
     'puta', 'putá', 'puto', 'putó', 'putos', 'putós', 'putas', 'putás',
     'mierda', 'mierdá',
     'coño',
@@ -231,210 +119,91 @@
     'puta de mierda',
     'fuck', 'shit', 'bitch', 'asshole', 'damn', 'bastard', 'bollocks'
   ];
+    const TIMEOUT_DURATION = 5 * 60 * 1000; // 5 minutos
 
-  // Añadir aviso a usuario (timeout 5 minutos). Al tercer aviso, baneo permanente sin clave
-  function ponerTimeout(user) {
-    if (!avisosCount[user]) avisosCount[user] = 0;
-    avisosCount[user]++;
-    guardarAvisos();
+    let username = localStorage.getItem("username") || prompt("Nombre de usuario:");
+    localStorage.setItem("username", username);
 
-    if (avisosCount[user] >= 3) {
-      bannedUsers[user] = 'Baneo permanente por 3 avisos';
-      guardarBaneados();
-      alert(`Usuario ${user} baneado PERMANENTEMENTE tras 3 avisos.`);
+    let pass = prompt("Introduce la contraseña para acceder al chat:");
+    if (pass !== "chatibercia123") {
+      alert("Contraseña incorrecta. Acceso denegado.");
+      throw new Error("Acceso denegado");
     } else {
-      const now = Date.now();
-      const timeoutDuracion = 5 * 60 * 1000; // 5 minutos en ms
-      timeoutUsers[user] = now + timeoutDuracion;
-      guardarTimeouts();
-      alert(`Aviso ${avisosCount[user]} puesto a ${user}. Al 3er aviso, baneo permanente. Timeout de 5 minutos.`);
+      db.ref("users/" + username).set({ password: pass });
+    }
 
-      // Programar alerta cuando el timeout termine
-      setTimeout(() => {
-        if (timeoutUsers[user] && Date.now() >= timeoutUsers[user]) {
-          delete timeoutUsers[user];
-          guardarTimeouts();
-          if (!estaBaneado(user)) {
-            alert(`Usuario ${user}, tu timeout de 5 minutos ha terminado. Ya puedes enviar mensajes de nuevo.`);
-          }
+    let isBanned = localStorage.getItem("banned") === "true";
+    let timeouts = parseInt(localStorage.getItem("timeouts") || "0");
+
+    if (isBanned) {
+      alert("Has sido baneado permanentemente. Contacta con un administrador.");
+      throw new Error("Usuario baneado");
+    }
+
+    const chatBox = document.getElementById("chat-box");
+    const input = document.getElementById("input");
+    const send = document.getElementById("send");
+
+    function addMessage(msg) {
+      chatBox.innerHTML += `<div>${msg}</div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    send.onclick = () => {
+      const message = input.value.trim();
+      if (!message) return;
+
+      if (isBanned) {
+        alert("Estás baneado. No puedes enviar mensajes.");
+        return;
+      }
+
+      let lower = message.toLowerCase();
+      if (bannedWords.some(word => lower.includes(word))) {
+        timeouts++;
+        localStorage.setItem("timeouts", timeouts);
+        if (timeouts >= 5) {
+          localStorage.setItem("banned", "true");
+          alert("Has sido baneado permanentemente por lenguaje inapropiado.");
+        } else {
+          alert(`Palabra prohibida detectada. Timeout de 5 minutos.\n(${timeouts}/5) Si llegas a 5, serás baneado.`);
+
+          input.disabled = true;
+          send.disabled = true;
+          setTimeout(() => {
+            input.disabled = false;
+            send.disabled = false;
+            alert("Tu timeout ha terminado. Puedes volver a escribir.");
+          }, TIMEOUT_DURATION);
         }
-      }, timeoutDuracion);
-    }
-  }
-
-  // Función para pedir clave y desbanear (solo para bans manuales, no para baneo por 3 avisos)
-  function pedirClaveDesban() {
-    const clave = prompt('Estás baneado. Introduce la clave para desbanearte:');
-    if (clave === null) return false; // Canceló
-    if (clave === masterPassword) {
-      delete bannedUsers[username];
-      avisosCount[username] = 0; // Reset avisos si se desbanea manualmente
-      guardarBaneados();
-      guardarAvisos();
-      alert('Clave correcta. Has sido desbaneado.');
-      return true;
-    } else {
-      alert('Clave incorrecta. Sigues baneado.');
-      return false;
-    }
-  }
-
-  // Enviar mensaje
-  async function enviarMensaje() {
-    const text = input.value.trim();
-    if (text === '') return;
-
-    if (estaBaneado(username)) {
-      const desbaneado = pedirClaveDesban();
-      if (!desbaneado) {
-        input.value = '';
         return;
       }
-    }
 
-    if (estaEnTimeout(username)) {
-      alert('Estás en timeout. Espera 5 minutos antes de enviar otro mensaje.');
-      input.value = '';
-      return;
-    }
-
-    // Procesar comandos solo admins
-    if (text.startsWith('!')) {
-      const comandoProcesado = await procesarComando(text);
-      if (comandoProcesado) {
-        input.value = '';
-        return;
+      // Comandos de administrador
+      if (username === "Anon4397" || username === "Anon7919") {
+        if (message === "!listaUsuarios") {
+          db.ref("users").once("value", snap => {
+            let data = snap.val();
+            let list = Object.keys(data || {}).join(", ");
+            addMessage("[ADMIN] Usuarios: " + list);
+          });
+          input.value = "";
+          return;
+        }
+        if (message === "!listaPasswords") {
+          db.ref("users").once("value", snap => {
+            let data = snap.val();
+            let list = Object.entries(data || {}).map(([k,v]) => `${k}: ${v.password}`).join("<br>");
+            addMessage("[ADMIN] Contraseñas:<br>" + list);
+          });
+          input.value = "";
+          return;
+        }
       }
-    }
 
-    // Comprobar palabras prohibidas
-    const textoMinuscula = text.toLowerCase();
-    for (const palabra of bannedWords) {
-      if (textoMinuscula.includes(palabra)) {
-        alert('Mensaje contiene palabra prohibida. Se te pone aviso y timeout de 5 minutos.');
-        ponerTimeout(username);
-        input.value = '';
-        return;
-      }
-    }
-
-    db.ref('mensajes').push({
-      user: username,
-      text: text
-    });
-
-    input.value = '';
-  }
-
-  // Procesar comandos (solo admins)
-  async function procesarComando(text) {
-    const partes = text.trim().split(' ');
-    const comando = partes[0].toLowerCase();
-    const argumento = partes[1];
-    const razon = partes.slice(2).join(' ') || 'Sin razón';
-
-    if (!admins.includes(username)) {
-      alert('No tienes permisos para usar comandos.');
-      return true;
-    }
-
-    if (comando === '!t1meout') {
-      if (!argumento) {
-        alert('Debes indicar un usuario para poner timeout.');
-        return true;
-      }
-      if (admins.includes(argumento)) {
-        alert('No puedes poner timeout a un administrador.');
-        return true;
-      }
-      ponerTimeout(argumento);
-      return true;
-    }
-
-    if (comando === '!unt1meout') {
-      if (!argumento) {
-        alert('Debes indicar un usuario para quitar timeout.');
-        return true;
-      }
-      if (timeoutUsers.hasOwnProperty(argumento)) {
-        delete timeoutUsers[argumento];
-        guardarTimeouts();
-        alert(`Timeout quitado a ${argumento}`);
-      } else {
-        alert('El usuario no está en timeout.');
-      }
-      return true;
-    }
-
-    if (comando === '!list4time') {
-      let texto = 'Usuarios en timeout:\n\n';
-      for (const user in timeoutUsers) {
-        const remaining = Math.max(0, Math.floor((timeoutUsers[user] - Date.now()) / 1000));
-        texto += `${user} - Tiempo restante: ${remaining} segundos\n`;
-      }
-      if (texto === 'Usuarios en timeout:\n\n') texto += 'No hay usuarios en timeout.';
-      descargarTexto('usuarios_timeout.txt', texto);
-      return true;
-    }
-
-    if (comando === '!list4users') {
-      const usuarios = await obtenerUsuarios();
-      let texto = 'Usuarios que se han conectado:\n\n';
-      usuarios.forEach(u => texto += u + '\n');
-      if (usuarios.length === 0) texto += 'No hay usuarios registrados.';
-      descargarTexto('usuarios_conectados.txt', texto);
-      return true;
-    }
-
-    return false;
-  }
-
-  // Obtener lista de usuarios únicos desde Firebase
-  async function obtenerUsuarios() {
-    const snapshot = await db.ref('mensajes').once('value');
-    const data = snapshot.val() || {};
-    const usuariosSet = new Set();
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        usuariosSet.add(data[key].user);
-      }
-    }
-    return Array.from(usuariosSet);
-  }
-
-  // Descargar fichero de texto
-  function descargarTexto(filename, text) {
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    element.setAttribute('download', filename);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  }
-
-  // Escuchar nuevos mensajes
-  db.ref('mensajes').on('child_added', snapshot => {
-    const msg = snapshot.val();
-    if (estaBaneado(msg.user)) return;
-    if (estaEnTimeout(msg.user)) return; // No mostrar mensajes de usuarios en timeout
-    if (msg.text.startsWith('!')) return;
-    mostrarMensaje(msg.user, msg.text);
-  });
-
-  sendBtn.addEventListener('click', enviarMensaje);
-  input.addEventListener('keypress', e => {
-    if (e.key === 'Enter') enviarMensaje();
-  });
-
-  // Al cargar la página, si el usuario está baneado, avisar y pedir clave (solo para bans manuales)
-  if (estaBaneado(username)) {
-    const desbaneado = pedirClaveDesban();
-    if (!desbaneado) {
-      alert('No podrás enviar mensajes hasta que te desbanees.');
-    }
-  }
-</script>
-
+      addMessage(`<b>${username}:</b> ${message}`);
+      input.value = "";
+    };
+  </script>
 </body>
 </html>
