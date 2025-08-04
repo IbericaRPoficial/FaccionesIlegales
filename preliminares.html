@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro de IP - Matrix</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: black;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 20px;
+      backdrop-filter: brightness(0.4);
+    }
+
+    .terminal {
+      font-size: 1.7em;
+      text-shadow: 0 0 10px #00ff00;
+      margin-bottom: 50px;
+      animation: glow 1.5s infinite alternate;
+    }
+
+    .progress-container {
+      width: 80%;
+      background-color: rgba(0, 0, 0, 0.5);
+      border: 2px solid #00ff00;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 30px;
+      box-shadow: 0 0 10px #00ff00;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: #00ff00;
+      animation: load 60s linear forwards; /* CAMBIA AQUÍ a 14400s para 4h */
+    }
+
+    @keyframes load {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 5px #00ff00; }
+      to { text-shadow: 0 0 15px #00ff00; }
+    }
+
+    #access-message {
+      margin-top: 30px;
+      font-size: 1.6em;
+      color: #00ff00;
+      text-shadow: 0 0 10px #00ff00;
+      display: none;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrix"></canvas>
+
+  <div class="content">
+    <div class="terminal" id="message">IP SIENDO REGISTRADA...</div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div id="access-message">🟢 ACCESO DISPONIBLE EN 10 HORAS</div>
+  </div>
+
+  <script>
+    // Cambios de texto cada 10 segundos
+    const messages = [
+      "IP SIENDO REGISTRADA...",
+      "PIDIENDO SOLICITUD AL SERVIDOR CENTRAL...",
+      "CONEXIÓN SEGURA ESTABLECIDA...",
+      "MONITOREO EN CURSO...",
+      "TRANSFERENCIA DE DATOS...",
+      "SINCRONIZANDO IDENTIDAD DIGITAL..."
+    ];
+    let index = 0;
+    const messageDiv = document.getElementById("message");
+
+    setInterval(() => {
+      index = (index + 1) % messages.length;
+      messageDiv.textContent = messages[index];
+    }, 10000);
+
+    // Mostrar mensaje parpadeante al final
+    setTimeout(() => {
+      document.getElementById("access-message").style.display = "block";
+    }, 60000); // CAMBIA AQUÍ a 14400000 para 4 horas
+
+    // Matrix fondo
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+
+    const letters = "アカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#0F0";
+      ctx.font = fontSize + "px monospace";
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters.charAt(Math.floor(Math.random() * letters.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+
+        drops[i]++;
+      }
+    }
+
+    setInterval(drawMatrix, 33);
+
+    // Redimensionar canvas si cambia tamaño ventana
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
