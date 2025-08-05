@@ -2,155 +2,161 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Registro de IP - Matrix</title>
+  <title>Preliminares IbericaRP</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      background: black;
-      color: #00ff00;
-      font-family: 'Courier New', Courier, monospace;
       overflow: hidden;
+      height: 100%;
+      font-family: monospace;
+      background: black;
+      color: #0f0;
     }
 
     canvas {
       position: fixed;
       top: 0;
       left: 0;
-      z-index: -1;
+      z-index: 0;
     }
 
-    .content {
+    h1 {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 32px;
+      color: #0f0;
+      z-index: 2;
+      text-shadow: 0 0 5px #0f0, 0 0 10px #0f0;
+    }
+
+    .square {
+      position: absolute;
+      width: 220px;
+      height: 180px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #0f0;
+      backdrop-filter: blur(10px);
+      filter: blur(4px);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      color: #0f0;
+      font-size: 16px;
+      transition: filter 0.3s, backdrop-filter 0.3s;
+      z-index: 1;
+      cursor: pointer;
+      padding: 10px;
       text-align: center;
-      padding: 20px;
-      backdrop-filter: brightness(0.4);
     }
 
-    .terminal {
-      font-size: 1.7em;
-      text-shadow: 0 0 10px #00ff00;
-      margin-bottom: 50px;
-      animation: glow 1.5s infinite alternate;
+    .square.unlocked {
+      filter: none !important;
+      backdrop-filter: none !important;
+      background: rgba(0, 0, 0, 0.8);
     }
 
-    .progress-container {
-      width: 80%;
-      background-color: rgba(0, 0, 0, 0.5);
-      border: 2px solid #00ff00;
-      border-radius: 10px;
-      overflow: hidden;
-      height: 30px;
-      box-shadow: 0 0 10px #00ff00;
+    .square h3 {
+      margin: 10px 0 5px;
     }
 
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background-color: #00ff00;
-      animation: load 60s linear forwards; /* CAMBIA AQUÍ a 14400s para 4h */
-    }
-
-    @keyframes load {
-      from { width: 0%; }
-      to { width: 100%; }
-    }
-
-    @keyframes glow {
-      from { text-shadow: 0 0 5px #00ff00; }
-      to { text-shadow: 0 0 15px #00ff00; }
-    }
-
-    #access-message {
-      margin-top: 30px;
-      font-size: 1.6em;
-      color: #00ff00;
-      text-shadow: 0 0 10px #00ff00;
+    .square a {
       display: none;
-      animation: blink 1s infinite;
+      color: #0ff;
+      text-decoration: underline;
+      margin-top: 10px;
     }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.2; }
+    .square.unlocked a {
+      display: block;
     }
+
+    /* Posiciones */
+    #sq1 { top: 80px; left: 60px; }
+    #sq2 { top: 80px; right: 60px; }
+    #sq3 { bottom: 60px; left: 60px; }
+    #sq4 { bottom: 60px; right: 60px; }
   </style>
 </head>
 <body>
-  <canvas id="matrix"></canvas>
 
-  <div class="content">
-    <div class="terminal" id="message">IP SIENDO REGISTRADA...</div>
-    <div class="progress-container">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div id="access-message">🟢 ACCESO DISPONIBLE EN 10 HORAS</div>
-  </div>
+<canvas id="matrix"></canvas>
 
-  <script>
-    // Cambios de texto cada 10 segundos
-    const messages = [
-      "IP SIENDO REGISTRADA...",
-      "PIDIENDO SOLICITUD AL SERVIDOR CENTRAL...",
-      "CONEXIÓN SEGURA ESTABLECIDA...",
-      "MONITOREO EN CURSO...",
-      "TRANSFERENCIA DE DATOS...",
-      "SINCRONIZANDO IDENTIDAD DIGITAL..."
-    ];
-    let index = 0;
-    const messageDiv = document.getElementById("message");
+<h1>PRELIMINARES</h1>
 
-    setInterval(() => {
-      index = (index + 1) % messages.length;
-      messageDiv.textContent = messages[index];
-    }, 10000);
+<div class="square" id="sq1" data-index="0">
+  <h3>Robo de Armas</h3>
+  <a href="pdfs/preliminar1.pdf" target="_blank">Ver PDF</a>
+</div>
 
-    // Mostrar mensaje parpadeante al final
-    setTimeout(() => {
-      document.getElementById("access-message").style.display = "block";
-    }, 60000); // CAMBIA AQUÍ a 14400000 para 4 horas
+<div class="square" id="sq2" data-index="1">
+  <h3>Limpieza y Blanqueo de Armas</h3>
+  <a href="pdfs/preliminar2.pdf" target="_blank">Ver PDF</a>
+</div>
 
-    // Matrix fondo
-    const canvas = document.getElementById('matrix');
-    const ctx = canvas.getContext('2d');
-    canvas.height = window.innerHeight;
-    canvas.width = window.innerWidth;
+<div class="square" id="sq3" data-index="2">
+  <h3>Robo de Cortador de Cristal</h3>
+  <a href="pdfs/preliminar3.pdf" target="_blank">Ver PDF</a>
+</div>
 
-    const letters = "アカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const fontSize = 16;
-    const columns = canvas.width / fontSize;
-    const drops = Array(Math.floor(columns)).fill(1);
+<div class="square" id="sq4" data-index="3">
+  <h3>Contacto de venta</h3>
+  <a href="pdfs/preliminar4.pdf" target="_blank">Ver PDF</a>
+</div>
 
-    function drawMatrix() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#0F0";
-      ctx.font = fontSize + "px monospace";
+<script>
+  // Efecto Matrix
+  const canvas = document.getElementById("matrix");
+  const ctx = canvas.getContext("2d");
 
-      for (let i = 0; i < drops.length; i++) {
-        const text = letters.charAt(Math.floor(Math.random() * letters.length));
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth;
 
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
+  const alphabet = "アァイィウエエオカキクケコサシスセソタチツテトナニヌネノABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const fontSize = 14;
+  const columns = canvas.width / fontSize;
+  const drops = [];
 
-        drops[i]++;
+  for (let x = 0; x < columns; x++) {
+    drops[x] = Math.random() * canvas.height;
+  }
+
+  function draw() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0F0";
+    ctx.font = fontSize + "px monospace";
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
       }
+      drops[i]++;
     }
+  }
 
-    setInterval(drawMatrix, 33);
+  setInterval(draw, 35);
 
-    // Redimensionar canvas si cambia tamaño ventana
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+  // Contraseñas por cuadrado
+  const passwords = ["contraseña1", "contraseña2", "contraseña3", "contraseña4"];
+
+  document.querySelectorAll(".square").forEach(square => {
+    square.addEventListener("click", () => {
+      const index = parseInt(square.getAttribute("data-index"));
+      const input = prompt("Introduce la contraseña para desbloquear:");
+      if (input === passwords[index]) {
+        square.classList.add("unlocked");
+      } else {
+        alert("Contraseña incorrecta.");
+      }
     });
-  </script>
+  });
+</script>
+
 </body>
 </html>
