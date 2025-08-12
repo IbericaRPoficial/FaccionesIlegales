@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Facciones Ilegales IbericaRP</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: #0f0;
+      font-family: monospace;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    #titulo-matrix {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px;
+      font-weight: bold;
+      color: #0f0;
+      text-shadow: 0 0 10px #0f0;
+      z-index: 10;
+      font-family: monospace;
+      letter-spacing: 3px;
+      white-space: nowrap;
+    }
+
+    .terminal {
+      position: absolute;
+      top: 20%;
+      right: 5%;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border: 2px solid #0f0;
+      border-radius: 8px;
+      z-index: 1;
+    }
+
+    .command {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #0f0;
+      cursor: pointer;
+      transition: background 0.3s;
+      text-align: center;
+    }
+
+    .command:hover {
+      background: #0f0;
+      color: black;
+    }
+
+    #popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: black;
+      border: 2px solid #0f0;
+      padding: 20px;
+      z-index: 2;
+      display: none;
+      width: 320px;
+      box-sizing: border-box;
+    }
+
+    #popup input {
+      background: black;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #popup button {
+      background: #0f0;
+      color: black;
+      border: none;
+      padding: 8px 12px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    #message {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      padding: 10px;
+      border: 1px solid #0f0;
+      display: none;
+      z-index: 3;
+    }
+
+    /* Accesibilidad: foco visible */
+    .command:focus {
+      outline: 2px dashed #0f0;
+      outline-offset: 4px;
+    }
+    #passwordInput:focus {
+      outline: 1px solid #0f0;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div id="titulo-matrix"></div>
+
+<div class="terminal" role="navigation" aria-label="Terminal de comandos">
+  <div class="command" onclick="window.open('https://docs.google.com/document/d/1tUVY6BEpL78bg4Dme58NLloHz46Onfh5jUEQOLhGIKo/edit?tab=t.0', '_blank')" tabindex="0">NORMATIVA</div>
+  <div class="command" onclick="pedirClave('hacker')" tabindex="0">HACKER</div>
+  <div class="command" onclick="pedirClave('preliminares')" tabindex="0">PRELIMINARES</div>
+  <div class="command" onclick="pedirClave('chat')" tabindex="0">CHAT</div>
+</div>
+
+<div id="popup" role="dialog" aria-hidden="true" aria-labelledby="popup-label">
+  <p id="popup-label">Introduce contraseña:</p>
+  <input type="password" id="passwordInput" aria-label="Campo de contraseña" />
+  <button id="enterBtn">Entrar</button>
+</div>
+
+<div id="message" role="status" aria-live="polite"></div>
+
+<script>
+  // Efecto Matrix
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas(){
+    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    columns = Math.floor(canvas.width / fontSize);
+    drops = Array(columns).fill(1);
+  }
+
+  let letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ$%#@*".split("");
+  let fontSize = 14;
+  let columns = window.innerWidth / fontSize;
+  let drops = Array(Math.floor(columns)).fill(1);
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function drawMatrix() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0F0";
+    ctx.font = fontSize + "px monospace";
+
+    for (let i = 0; i < drops.length; i++) {
+      let text = letters[Math.floor(Math.random() * letters.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+
+  setInterval(drawMatrix, 33);
+
+  // Título con animación tipo hacker
+  const hackerTitle = "FACCIONES ILEGALES";
+  const hackerChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  const tituloElement = document.getElementById("titulo-matrix");
+
+  let i = 0;
+  function hackerEffect() {
+    let interval = setInterval(() => {
+      let displayed = "";
+      for (let j = 0; j < hackerTitle.length; j++) {
+        if (j < i) {
+          displayed += hackerTitle[j];
+        } else {
+          displayed += hackerChars[Math.floor(Math.random() * hackerChars.length)];
+        }
+      }
+      tituloElement.innerText = displayed;
+      if (i >= hackerTitle.length) clearInterval(interval);
+      i++;
+    }, 150);
+  }
+  hackerEffect();
+
+  // Lógica de contraseñas
+  const claves = {
+    hacker: { clave: "syslink_42.root", url: "terminalhacker.html" },
+    chat: { clave: "Ib14e07Darknet", url: "anonim-chat.html" },
+    // Preliminares ahora acepta 5 contraseñas distintas (clave -> url)
+    preliminares: {
+      multiple: true,
+      passwords: {
+        "Contraseña1": "preliminar1.html",
+        "Contraseña2": "preliminar2.html",
+        "Contraseña3": "preliminar3.html",
+        "Contraseña4": "preliminar4.html",
+        "Contraseña5": "preliminar5.html"
+      }
+    }
+  };
+
+  let seccionActual = "";
+  const popup = document.getElementById('popup');
+  const passwordInput = document.getElementById('passwordInput');
+  const mensaje = document.getElementById('message');
+  const enterBtn = document.getElementById('enterBtn');
+
+  function pedirClave(seccion) {
+    seccionActual = seccion;
+    popup.style.display = 'block';
+    popup.setAttribute('aria-hidden', 'false');
+    passwordInput.value = "";
+    passwordInput.focus();
+    document.getElementById('popup-label').innerText = `Contraseña para "${seccion.toUpperCase()}"`;
+  }
+
+  function verificarClave() {
+    const entrada = passwordInput.value;
+    const acceso = claves[seccionActual];
+
+    if (!acceso) {
+      alert("Sección no encontrada.");
+      return;
+    }
+
+    // Si la sección admite múltiples contraseñas (preliminares)
+    if (acceso.multiple && acceso.passwords) {
+      // Buscamos la contraseña exactamente como la haya escrito el usuario.
+      // Si quieres hacerlo case-insensitive, transforma ambos a .toLowerCase()
+      const targetUrl = acceso.passwords[entrada];
+      if (targetUrl) {
+        accesoConcedido(targetUrl, seccionActual);
+      } else {
+        alert("❌ Contraseña incorrecta.");
+      }
+      return;
+    }
+
+    // Resto de secciones con una sola contraseña
+    if (entrada === acceso.clave) {
+      accesoConcedido(acceso.url, seccionActual);
+    } else {
+      alert("❌ Contraseña incorrecta.");
+    }
+  }
+
+  function accesoConcedido(url, seccion) {
+    popup.style.display = 'none';
+    popup.setAttribute('aria-hidden', 'true');
+    mensaje.innerText = `✔ Acceso concedido a ${seccion.toUpperCase()}`;
+    mensaje.style.display = 'block';
+    // pequeña espera visual antes de redirigir
+    setTimeout(() => {
+      mensaje.style.display = 'none';
+      // redirigimos a la url correspondiente
+      window.location.href = url;
+    }, 800);
+  }
+
+  // Eventos
+  enterBtn.addEventListener('click', verificarClave);
+  passwordInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') verificarClave();
+    if (e.key === 'Escape') {
+      popup.style.display = 'none';
+      popup.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  // Cierre pulsando fuera (opcional, evita que quede abierto)
+  document.addEventListener('click', function(e){
+    if (popup.style.display === 'block' && !popup.contains(e.target) && !e.target.classList.contains('command')) {
+      popup.style.display = 'none';
+      popup.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  // Permitir abrir con teclado (Enter) en los .command
+  document.querySelectorAll('.command').forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        el.click();
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
