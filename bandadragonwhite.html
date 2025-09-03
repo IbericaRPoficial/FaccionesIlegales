@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Dragon White 🤍</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-white text-gray-900 font-mono p-6">
+
+<!-- CABECERA CON LOGO -->
+<div class="flex items-center mb-6 space-x-4">
+  <img src="logodragonwhite.png" alt="Logo Dragon White" class="w-16 h-16 rounded-full border border-gray-400">
+  <h1 class="text-3xl font-bold">Dragon White 🤍</h1>
+</div>
+
+<!-- HISTORIA -->
+<div class="p-4 mb-6 bg-gray-100 border border-gray-300 rounded-lg shadow text-gray-800 whitespace-pre-line">
+A quien lea estas líneas, no escribo por perdón ni por gloria,
+sino porque nuestra historia no debe quedar en rumores ni en mitos inventados.
+Debe estar escrita, aunque sea en la sombra.
+
+Nacimos en los callejones del puerto, donde lo único que había era hambre,
+marcados demasiado pronto, cansados de ver
+cómo la ciudad nos devoraba sin devolver nada.
+
+El nombre no fue casual: dragón por poder, blanco por la frialdad,
+la forma en que aprendimos a movernos en un mundo que no nos quería vivos.
+
+No éramos héroes ni monstruos, sino un organismo vivo.
+La lealtad era ley, la traición significaba sentencia inmediata.
+Muchos quisieron entrar, pocos soportaron el peso.
+
+Hoy el nombre Dragon White persiste en murales, en susurros y en archivos tachados.
+Algunos cayeron, otros se dispersaron, pero la esencia permanece.
+Un dragón no muere: se repliega, se esconde y espera su momento.
+
+Y si estas palabras llegan a alguien, que entienda:
+no buscan asustar, sino recordar que en la sombra de la ciudad
+existió un dragón blanco que nunca dejó de respirar.
+</div>
+
+<!-- CHAT -->
+<h2 class="text-2xl font-bold mb-4">💬 Chat de la Banda</h2>
+<div class="mb-6">
+  <div id="chatDragon" class="h-40 overflow-y-auto border border-gray-400 p-2 bg-gray-100 rounded mb-2"></div>
+  <input id="msgDragon" type="text" placeholder="Mensaje..." class="w-full p-2 rounded border border-gray-400 bg-gray-200 text-gray-900">
+  <button id="sendDragon" class="mt-1 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">Enviar</button>
+</div>
+
+<!-- LISTADO DE MISIONES -->
+<h2 class="text-2xl font-bold mb-4">📂 Misiones Asignadas</h2>
+<div id="missionsBox" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getDatabase, ref, onChildAdded, push } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+const { jsPDF } = window.jspdf;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbbODksHMu7HrhrAP3MlBVzhtMn-8sPJQ",
+  authDomain: "bandasibericarp.firebaseapp.com",
+  databaseURL: "https://bandasibericarp-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bandasibericarp",
+  storageBucket: "bandasibericarp.firebasestorage.app",
+  messagingSenderId: "599477975058",
+  appId: "1:599477975058:web:b9faafcd205f27c49240cb",
+  measurementId: "G-J8QJ1SNQFB"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// CHAT
+const chatDragon = document.getElementById("chatDragon");
+const msgDragon = document.getElementById("msgDragon");
+const sendDragon = document.getElementById("sendDragon");
+
+function showMessage(container, msg) {
+  let div = document.createElement("div");
+  div.textContent = msg.sender + ": " + msg.text;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+// Escuchar mensajes solo de Dragon White
+onChildAdded(ref(db, "chats/Dragon White"), snap => showMessage(chatDragon, snap.val()));
+
+// Enviar mensaje como banda
+sendDragon.addEventListener("click", () => {
+  if (msgDragon.value.trim() === "") return;
+  push(ref(db, "chats/Dragon White"), { sender: "Dragon White 🤍", text: msgDragon.value });
+  msgDragon.value = "";
+});
+
+// MISIÓNES (solo lectura, sin botón de completar)
+const missionsBox = document.getElementById("missionsBox");
+
+onChildAdded(ref(db, "missions/Dragon White"), snap => {
+  const mission = snap.val();
+
+  let div = document.createElement("div");
+  div.className = "p-4 border border-gray-400 bg-gray-100 rounded-lg shadow flex flex-col justify-between";
+
+  let content = document.createElement("div");
+  content.innerHTML = `<b class="text-lg text-gray-900">${mission.title}</b>
+                       <p class="text-sm text-gray-600">Banda: Dragon White 🤍</p>
+                       <p class="mt-2 text-gray-800">${mission.description}</p>
+                       <p class="mt-2 text-gray-600 italic">${mission.details}</p>`;
+
+  let btnPDF = document.createElement("button");
+  btnPDF.textContent = "📄 Ver más";
+  btnPDF.className = "px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white mt-2";
+  btnPDF.onclick = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("📋 Detalles de la misión", 10, 20);
+    doc.setFontSize(12);
+
+    const titleLines = doc.splitTextToSize("Título: " + mission.title, 180);
+    const bandLines = doc.splitTextToSize("Banda: Dragon White 🤍", 180);
+    const descLines = doc.splitTextToSize("Descripción: " + mission.description, 180);
+    const detailsLines = doc.splitTextToSize("Detalles: " + mission.details, 180);
+
+    let y = 40;
+    [titleLines, bandLines, descLines, detailsLines].forEach(lines => {
+      doc.text(lines, 10, y);
+      y += lines.length * 6;
+    });
+
+    doc.save(`${mission.title.replace(/\s+/g, "_")}.pdf`);
+  };
+
+  div.appendChild(content);
+  div.appendChild(btnPDF);
+  missionsBox.appendChild(div);
+});
+</script>
+</body>
+</html>
