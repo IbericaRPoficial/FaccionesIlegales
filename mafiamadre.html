@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>PDA Central 💣</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-black text-white font-mono p-6">
+
+<h1 class="text-3xl font-bold mb-6 text-center">📡 MAFIA CENTRAL</h1>
+
+<!-- CHAT -->
+<h2 class="text-2xl font-bold mb-4">💬 Chat con Bandas</h2>
+<div class="grid grid-cols-2 gap-4 mb-10">
+  <div>
+    <h3 class="font-bold text-green-400">Hail Sombras</h3>
+    <div id="chatHail" class="h-40 overflow-y-auto border border-gray-700 p-2 bg-gray-900 rounded mb-2"></div>
+    <input id="msgHail" type="text" placeholder="Mensaje..." class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white">
+    <button id="sendHail" class="mt-1 w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded">Enviar</button>
+  </div>
+  <div>
+    <h3 class="font-bold text-blue-400">Dragon White</h3>
+    <div id="chatDragon" class="h-40 overflow-y-auto border border-gray-700 p-2 bg-gray-900 rounded mb-2"></div>
+    <input id="msgDragon" type="text" placeholder="Mensaje..." class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white">
+    <button id="sendDragon" class="mt-1 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">Enviar</button>
+  </div>
+</div>
+
+<!-- FORMULARIO DE MISIONES -->
+<h2 class="text-2xl font-bold mb-4">📋 Asignar Misión</h2>
+<form id="missionForm" class="space-y-3 mb-10">
+  <input id="title" type="text" placeholder="Título" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" required>
+  <textarea id="description" placeholder="Descripción" rows="4" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" required></textarea>
+  <textarea id="details" placeholder="Detalles extras" rows="4" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white"></textarea>
+  <select id="bandSelect" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" required>
+    <option value="" disabled selected>Selecciona la banda</option>
+    <option value="Hail Sombras">Hail Sombras 💣</option>
+    <option value="Dragon White">Dragon White 🤍</option>
+  </select>
+  <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded w-full">Enviar Misión</button>
+</form>
+
+<!-- LISTADO DE MISIONES -->
+<h2 class="text-2xl font-bold mb-4">📂 Misiones Activas</h2>
+<div id="missionsBox" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+const { jsPDF } = window.jspdf;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbbODksHMu7HrhrAP3MlBVzhtMn-8sPJQ",
+  authDomain: "bandasibericarp.firebaseapp.com",
+  databaseURL: "https://bandasibericarp-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bandasibericarp",
+  storageBucket: "bandasibericarp.firebasestorage.app",
+  messagingSenderId: "599477975058",
+  appId: "1:599477975058:web:b9faafcd205f27c49240cb",
+  measurementId: "G-J8QJ1SNQFB"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// CHAT
+const chatHail = document.getElementById("chatHail");
+const chatDragon = document.getElementById("chatDragon");
+const msgHail = document.getElementById("msgHail");
+const msgDragon = document.getElementById("msgDragon");
+const sendHail = document.getElementById("sendHail");
+const sendDragon = document.getElementById("sendDragon");
+
+function showMessage(container, msg) {
+  let div = document.createElement("div");
+  div.textContent = msg.sender + ": " + msg.text;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+onChildAdded(ref(db, "chats/Hail Sombras"), snap => showMessage(chatHail, snap.val()));
+onChildAdded(ref(db, "chats/Dragon White"), snap => showMessage(chatDragon, snap.val()));
+
+sendHail.addEventListener("click", () => {
+  if (msgHail.value.trim() === "") return;
+  push(ref(db, "chats/Hail Sombras"), { sender: "Mafia Madre", text: msgHail.value });
+  msgHail.value = "";
+});
+sendDragon.addEventListener("click", () => {
+  if (msgDragon.value.trim() === "") return;
+  push(ref(db, "chats/Dragon White"), { sender: "Mafia Madre", text: msgDragon.value });
+  msgDragon.value = "";
+});
+
+// MISIONES
+const missionsBox = document.getElementById("missionsBox");
+
+document.getElementById("missionForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const band = document.getElementById("bandSelect").value;
+  const mission = {
+    title: document.getElementById("title").value,
+    description: document.getElementById("description").value,
+    details: document.getElementById("details").value
+  };
+  push(ref(db, "missions/" + band), mission);
+  e.target.reset();
+});
+
+function loadMissions(band) {
+  onChildAdded(ref(db, "missions/" + band), snap => {
+    const mission = snap.val();
+    const key = snap.key;
+
+    let div = document.createElement("div");
+    div.className = "p-4 border border-gray-700 bg-gray-900 rounded-lg shadow flex flex-col justify-between";
+
+    let content = document.createElement("div");
+    content.innerHTML = `<b class="text-lg text-white">${mission.title}</b>
+                         <p class="text-sm text-gray-300">Banda: ${band}</p>
+                         <p class="mt-2 text-gray-300">${mission.description}</p>
+                         <p class="mt-2 text-gray-400 italic">${mission.details}</p>`;
+
+    let btns = document.createElement("div");
+    btns.className = "flex justify-between mt-4";
+
+    // PDF largo
+    let btnPDF = document.createElement("button");
+    btnPDF.textContent = "📄 Ver más";
+    btnPDF.className = "px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded";
+    btnPDF.onclick = () => {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("📋 Detalles de la misión", 10, 20);
+      doc.setFontSize(12);
+
+      const titleLines = doc.splitTextToSize("Título: " + mission.title, 180);
+      const bandLines = doc.splitTextToSize("Banda: " + band, 180);
+      const descLines = doc.splitTextToSize("Descripción: " + mission.description, 180);
+      const detailsLines = doc.splitTextToSize("Detalles: " + mission.details, 180);
+
+      let y = 40;
+      [titleLines, bandLines, descLines, detailsLines].forEach(lines => {
+        doc.text(lines, 10, y);
+        y += lines.length * 6;
+      });
+
+      doc.save(`${mission.title.replace(/\s+/g, "_")}.pdf`);
+    };
+
+    // Borrar misión
+    let btnDelete = document.createElement("button");
+    btnDelete.textContent = "✅ Completar";
+    btnDelete.className = "px-3 py-1 bg-red-600 hover:bg-red-700 rounded";
+    btnDelete.onclick = () => {
+      remove(ref(db, "missions/" + band + "/" + key));
+      div.remove();
+    };
+
+    btns.appendChild(btnPDF);
+    btns.appendChild(btnDelete);
+
+    div.appendChild(content);
+    div.appendChild(btns);
+    missionsBox.appendChild(div);
+  });
+}
+
+["Hail Sombras", "Dragon White"].forEach(band => loadMissions(band));
+</script>
+</body>
+</html>
