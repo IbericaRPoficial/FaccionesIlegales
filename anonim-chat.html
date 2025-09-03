@@ -73,22 +73,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-  // --- CONTRASEÑA INICIAL PARA ACCEDER AL CHAT ---
-  const claveInicial = "Ib14e07Darknet";
-  let accesoPermitido = false;
-
-  while (!accesoPermitido) {
-    const entrada = prompt("Introduce la contraseña para acceder al chat:");
-    if (entrada === null) {
-      alert("No puedes acceder sin la contraseña.");
-    } else if (entrada.trim() === claveInicial) {
-      accesoPermitido = true;
-    } else {
-      alert("Contraseña incorrecta. Inténtalo de nuevo.");
-    }
-  }
-
-  // Efecto Matrix en Canvas
+  // Efecto Matrix
   const canvas = document.getElementById('matrix');
   const ctx = canvas.getContext('2d');
   canvas.height = window.innerHeight;
@@ -104,7 +89,6 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#0F0";
     ctx.font = fontSize + "px monospace";
-
     for (let i = 0; i < drops.length; i++) {
       let text = letters[Math.floor(Math.random() * letters.length)];
       ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -154,94 +138,26 @@
     chatDiv.scrollTop = chatDiv.scrollHeight;
   }
 
-  function guardarBaneados() {
-    localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
-  }
-  function guardarTimeouts() {
-    localStorage.setItem('timeoutUsers', JSON.stringify(timeoutUsers));
-  }
-  function guardarAvisos() {
-    localStorage.setItem('avisosCount', JSON.stringify(avisosCount));
-  }
+  function guardarBaneados() { localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers)); }
+  function guardarTimeouts() { localStorage.setItem('timeoutUsers', JSON.stringify(timeoutUsers)); }
+  function guardarAvisos() { localStorage.setItem('avisosCount', JSON.stringify(avisosCount)); }
 
-  function estaBaneado(user) {
-    return bannedUsers.hasOwnProperty(user);
-  }
-
+  function estaBaneado(user) { return bannedUsers.hasOwnProperty(user); }
   function estaEnTimeout(user) {
     if (!timeoutUsers.hasOwnProperty(user)) return false;
     const timeoutEnd = timeoutUsers[user];
-    if (Date.now() > timeoutEnd) {
-      delete timeoutUsers[user];
-      guardarTimeouts();
-      return false;
-    }
+    if (Date.now() > timeoutEnd) { delete timeoutUsers[user]; guardarTimeouts(); return false; }
     return true;
   }
 
   const bannedWords = [
-    'puta', 'putá', 'puto', 'putó', 'putos', 'putós', 'putas', 'putás',
-    'mierda', 'mierdá',
-    'coño',
-    'gilipollas',
-    'joder',
-    'cabrón', 'cabron', 'cabrona',
-    'cabrones', 'cabrónes',
-    'culo',
-    'polla',
-    'pene',
-    'verga',
-    'chingar', 'chingado', 'chingadó', 'chingada', 'chingáda', 'chingados', 'chingádos',
-    'chingonas', 'chingónas', 'chingón', 'chingon',
-    'hostia',
-    'zorra',
-    'tonto', 'tonta',
-    'imbecil',
-    'idiota',
-    'subnormal',
-    'bastardo',
-    'estúpido', 'estupido',
-    'pendejo', 'pendeja',
-    'tarado', 'tarada',
-    'maldito', 'maldita',
-    'puta madre',
-    'hijo de puta',
-    'pinche',
-    'carajo',
-    'maricón', 'maricon',
-    'maricona',
-    'mariconez',
-    'pedo',
-    'pedocha',
-    'mamón', 'mamon',
-    'puta que te parió', 'puta que te pario',
-    'me cago en',
-    'me cago en todo',
-    'la concha de tu madre',
-    'cojones',
-    'puta mierda',
-    'mierda de mierda',
-    'facha',
-    'nazi',
-    'racista',
-    'homófobo', 'homofobo',
-    'terrorista',
-    'cabronazo',
-    'chinga tu madre',
-    'malparido', 'malparida',
-    'chupapollas',
-    'pajero', 'pajera',
-    'cerdo', 'cerda',
-    'bicho raro',
-    'puta de mierda',
-    'fuck', 'shit', 'bitch', 'asshole', 'damn', 'bastard', 'bollocks'
+    'puta','mierda','coño','gilipollas','joder','cabrón','culo','polla','pene','verga','chingar','hostia','zorra','tonto','imbecil','idiota','subnormal','bastardo','estúpido','pendejo','tarado','maldito','maricón','pedo','mamón','fuck','shit','bitch','asshole'
   ];
 
   function ponerTimeout(user) {
     if (!avisosCount[user]) avisosCount[user] = 0;
     avisosCount[user]++;
     guardarAvisos();
-
     if (avisosCount[user] >= 3) {
       bannedUsers[user] = 'Baneo permanente por 3 avisos';
       guardarBaneados();
@@ -251,15 +167,12 @@
       const timeoutDuracion = 5 * 60 * 1000;
       timeoutUsers[user] = now + timeoutDuracion;
       guardarTimeouts();
-      alert(`Aviso ${avisosCount[user]} puesto a ${user}. Al 3er aviso, baneo permanente. Timeout de 5 minutos.`);
-
+      alert(`Aviso ${avisosCount[user]} puesto a ${user}. Timeout de 5 minutos.`);
       setTimeout(() => {
         if (timeoutUsers[user] && Date.now() >= timeoutUsers[user]) {
           delete timeoutUsers[user];
           guardarTimeouts();
-          if (!estaBaneado(user)) {
-            alert(`Usuario ${user}, tu timeout de 5 minutos ha terminado. Ya puedes enviar mensajes de nuevo.`);
-          }
+          if (!estaBaneado(user)) alert(`Usuario ${user}, tu timeout de 5 minutos ha terminado.`);
         }
       }, timeoutDuracion);
     }
@@ -287,25 +200,12 @@
 
     if (estaBaneado(username)) {
       const desbaneado = pedirClaveDesban();
-      if (!desbaneado) {
-        input.value = '';
-        return;
-      }
+      if (!desbaneado) { input.value = ''; return; }
     }
 
-    if (estaEnTimeout(username)) {
-      alert('Estás en timeout. Espera 5 minutos antes de enviar otro mensaje.');
-      input.value = '';
-      return;
-    }
+    if (estaEnTimeout(username)) { alert('Estás en timeout. Espera 5 minutos.'); input.value = ''; return; }
 
-    if (text.startsWith('!')) {
-      const comandoProcesado = await procesarComando(text);
-      if (comandoProcesado) {
-        input.value = '';
-        return;
-      }
-    }
+    if (text.startsWith('!')) { const comandoProcesado = await procesarComando(text); if (comandoProcesado) { input.value = ''; return; } }
 
     const textoMinuscula = text.toLowerCase();
     for (const palabra of bannedWords) {
@@ -325,53 +225,13 @@
     const partes = text.trim().split(' ');
     const comando = partes[0].toLowerCase();
     const argumento = partes[1];
-    const razon = partes.slice(2).join(' ') || 'Sin razón';
 
-    if (!admins.includes(username)) {
-      alert('No tienes permisos para usar comandos.');
-      return true;
-    }
+    if (!admins.includes(username)) { alert('No tienes permisos para usar comandos.'); return true; }
 
-    if (comando === '!t1meout') {
-      if (!argumento || admins.includes(argumento)) {
-        alert('Usuario no válido o administrador.');
-        return true;
-      }
-      ponerTimeout(argumento);
-      return true;
-    }
-
-    if (comando === '!unt1meout') {
-      if (!argumento) return alert('Debes indicar un usuario.');
-      if (timeoutUsers.hasOwnProperty(argumento)) {
-        delete timeoutUsers[argumento];
-        guardarTimeouts();
-        alert(`Timeout quitado a ${argumento}`);
-      } else {
-        alert('El usuario no está en timeout.');
-      }
-      return true;
-    }
-
-    if (comando === '!list4time') {
-      let texto = 'Usuarios en timeout:\n\n';
-      for (const user in timeoutUsers) {
-        const remaining = Math.max(0, Math.floor((timeoutUsers[user] - Date.now()) / 1000));
-        texto += `${user} - Tiempo restante: ${remaining} segundos\n`;
-      }
-      if (texto === 'Usuarios en timeout:\n\n') texto += 'No hay usuarios en timeout.';
-      descargarTexto('usuarios_timeout.txt', texto);
-      return true;
-    }
-
-    if (comando === '!list4users') {
-      const usuarios = await obtenerUsuarios();
-      let texto = 'Usuarios que se han conectado:\n\n';
-      usuarios.forEach(u => texto += u + '\n');
-      if (usuarios.length === 0) texto += 'No hay usuarios registrados.';
-      descargarTexto('usuarios_conectados.txt', texto);
-      return true;
-    }
+    if (comando === '!t1meout') { if (!argumento || admins.includes(argumento)) { alert('Usuario no válido o administrador.'); return true; } ponerTimeout(argumento); return true; }
+    if (comando === '!unt1meout') { if (!argumento) return alert('Debes indicar un usuario.'); if (timeoutUsers.hasOwnProperty(argumento)) { delete timeoutUsers[argumento]; guardarTimeouts(); alert(`Timeout quitado a ${argumento}`); } else { alert('El usuario no está en timeout.'); } return true; }
+    if (comando === '!list4time') { let texto = 'Usuarios en timeout:\n\n'; for (const user in timeoutUsers) { const remaining = Math.max(0, Math.floor((timeoutUsers[user] - Date.now()) / 1000)); texto += `${user} - Tiempo restante: ${remaining} segundos\n`; } if (texto === 'Usuarios en timeout:\n\n') texto += 'No hay usuarios en timeout.'; descargarTexto('usuarios_timeout.txt', texto); return true; }
+    if (comando === '!list4users') { const usuarios = await obtenerUsuarios(); let texto = 'Usuarios que se han conectado:\n\n'; usuarios.forEach(u => texto += u + '\n'); if (usuarios.length === 0) texto += 'No hay usuarios registrados.'; descargarTexto('usuarios_conectados.txt', texto); return true; }
 
     return false;
   }
@@ -380,9 +240,7 @@
     const snapshot = await db.ref('mensajes').once('value');
     const data = snapshot.val() || {};
     const usuariosSet = new Set();
-    for (const key in data) {
-      usuariosSet.add(data[key].user);
-    }
+    for (const key in data) { usuariosSet.add(data[key].user); }
     return Array.from(usuariosSet);
   }
 
@@ -405,16 +263,9 @@
   });
 
   sendBtn.addEventListener('click', enviarMensaje);
-  input.addEventListener('keypress', e => {
-    if (e.key === 'Enter') enviarMensaje();
-  });
+  input.addEventListener('keypress', e => { if (e.key === 'Enter') enviarMensaje(); });
 
-  if (estaBaneado(username)) {
-    const desbaneado = pedirClaveDesban();
-    if (!desbaneado) {
-      alert('No podrás enviar mensajes hasta que te desbanees.');
-    }
-  }
+  if (estaBaneado(username)) { pedirClaveDesban(); }
 </script>
 
 </body>
