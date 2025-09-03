@@ -4,102 +4,16 @@
   <meta charset="UTF-8" />
   <title>Facciones Ilegales IbericaRP</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: black;
-      color: #0f0;
-      font-family: monospace;
-      overflow: hidden;
-    }
-
-    canvas {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-    }
-
-    #titulo-matrix {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 32px;
-      font-weight: bold;
-      color: #0f0;
-      text-shadow: 0 0 10px #0f0;
-      z-index: 10;
-      font-family: monospace;
-      letter-spacing: 3px;
-      white-space: nowrap;
-    }
-
-    .terminal {
-      position: absolute;
-      top: 20%;
-      right: 5%;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 20px;
-      border: 2px solid #0f0;
-      border-radius: 8px;
-      z-index: 1;
-    }
-
-    .command {
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px solid #0f0;
-      cursor: pointer;
-      transition: background 0.3s;
-      text-align: center;
-    }
-
-    .command:hover {
-      background: #0f0;
-      color: black;
-    }
-
-    #popup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: black;
-      border: 2px solid #0f0;
-      padding: 20px;
-      z-index: 2;
-      display: none;
-    }
-
-    #popup input {
-      background: black;
-      color: #0f0;
-      border: 1px solid #0f0;
-      padding: 5px;
-      width: 100%;
-    }
-
-    #popup button {
-      background: #0f0;
-      color: black;
-      border: none;
-      padding: 5px 10px;
-      margin-top: 10px;
-      cursor: pointer;
-    }
-
-    #message {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.8);
-      color: #0f0;
-      padding: 10px;
-      border: 1px solid #0f0;
-      display: none;
-      z-index: 3;
-    }
+    html, body { margin: 0; padding: 0; background: black; color: #0f0; font-family: monospace; overflow: hidden; }
+    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+    #titulo-matrix { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); font-size: 32px; font-weight: bold; color: #0f0; text-shadow: 0 0 10px #0f0; z-index: 10; font-family: monospace; letter-spacing: 3px; white-space: nowrap; }
+    .terminal { position: absolute; top: 20%; right: 5%; background: rgba(0,0,0,0.8); padding: 20px; border: 2px solid #0f0; border-radius: 8px; z-index: 1; }
+    .command { margin: 10px 0; padding: 10px; border: 1px solid #0f0; cursor: pointer; transition: background 0.3s; text-align: center; }
+    .command:hover { background: #0f0; color: black; }
+    #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: black; border: 2px solid #0f0; padding: 20px; z-index: 2; display: none; }
+    #popup input { background: black; color: #0f0; border: 1px solid #0f0; padding: 5px; width: 100%; }
+    #popup button { background: #0f0; color: black; border: none; padding: 5px 10px; margin-top: 10px; cursor: pointer; }
+    #message { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 10px; border: 1px solid #0f0; display: none; z-index: 3; }
   </style>
 </head>
 <body>
@@ -110,8 +24,8 @@
 <div class="terminal">
   <div class="command" onclick="window.open('https://docs.google.com/document/d/1gGcpk_YxQdzxLHGmVA0tl0GpM-1CpkK70LqDb-6Eg3E/edit?usp=sharing', '_blank')">NORMATIVA</div>
   <div class="command" onclick="pedirClave('hacker')">HACKER</div>
-  <div class="command" onclick="pedirClave('preliminares')">IDENTIFICACIÓN</div>
-  <div class="command" onclick="pedirClave('chat')">CHAT</div>
+  <div class="command" onclick="pedirClave('identificacion')">IDENTIFICACIÓN</div>
+  <div class="command" onclick="window.location.href='anonim-chat.html'">CHAT</div>
 </div>
 
 <div id="popup">
@@ -139,7 +53,6 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#0F0";
     ctx.font = fontSize + "px monospace";
-
     for (let i = 0; i < drops.length; i++) {
       let text = letters[Math.floor(Math.random() * letters.length)];
       ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -147,24 +60,18 @@
       drops[i]++;
     }
   }
-
   setInterval(drawMatrix, 33);
 
-  // Título con animación tipo hacker
+  // Título hacker
   const hackerTitle = "FACCIONES ILEGALES";
   const hackerChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
   const tituloElement = document.getElementById("titulo-matrix");
-
   let i = 0;
   function hackerEffect() {
     let interval = setInterval(() => {
       let displayed = "";
       for (let j = 0; j < hackerTitle.length; j++) {
-        if (j < i) {
-          displayed += hackerTitle[j];
-        } else {
-          displayed += hackerChars[Math.floor(Math.random() * hackerChars.length)];
-        }
+        displayed += j < i ? hackerTitle[j] : hackerChars[Math.floor(Math.random() * hackerChars.length)];
       }
       tituloElement.innerText = displayed;
       if (i >= hackerTitle.length) clearInterval(interval);
@@ -176,8 +83,11 @@
   // Lógica de contraseñas
   const claves = {
     hacker: { clave: "syslink_42.root", url: "terminalhacker.html" },
-    chat: { clave: "Ib14e07Darknet", url: "anonim-chat.html" },
-    preliminares: { clave: "launch.seq-07X", url: "preliminares.html" }
+    identificacion: [
+      { clave: "launch.seq-07X", url: "preliminares.html" },
+      { clave: "launch.seq-08Y", url: "preliminar_extra.html" },
+      { clave: "launch.seq-09Z", url: "preliminar_bonus.html" }
+    ]
   };
 
   let seccionActual = "";
@@ -196,22 +106,28 @@
     const mensaje = document.getElementById('message');
     const acceso = claves[seccionActual];
 
-    if (entrada === acceso.clave) {
-      popup.style.display = 'none';
-      mensaje.innerText = `✔ Acceso concedido a ${seccionActual.toUpperCase()}`;
-      mensaje.style.display = 'block';
-      setTimeout(() => {
-        mensaje.style.display = 'none';
-        window.location.href = acceso.url;
-      }, 1000);
+    if (Array.isArray(acceso)) {
+      const encontrado = acceso.find(item => item.clave === entrada);
+      if (encontrado) {
+        popup.style.display = 'none';
+        mensaje.innerText = `✔ Acceso concedido a ${seccionActual.toUpperCase()}`;
+        mensaje.style.display = 'block';
+        setTimeout(() => { mensaje.style.display = 'none'; window.location.href = encontrado.url; }, 1000);
+      } else {
+        alert("❌ Contraseña incorrecta.");
+      }
     } else {
-      alert("❌ Contraseña incorrecta.");
+      if (entrada === acceso.clave) {
+        popup.style.display = 'none';
+        mensaje.innerText = `✔ Acceso concedido a ${seccionActual.toUpperCase()}`;
+        mensaje.style.display = 'block';
+        setTimeout(() => { mensaje.style.display = 'none'; window.location.href = acceso.url; }, 1000);
+      } else {
+        alert("❌ Contraseña incorrecta.");
+      }
     }
   }
 </script>
 
 </body>
 </html>
-
-
-
