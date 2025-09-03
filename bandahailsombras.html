@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>PDA Hail Sombras 💣</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-black text-white font-mono p-6">
+
+<!-- CABECERA -->
+<div class="flex items-center mb-6">
+  <img src="logohailsombras.png" alt="Logo Hail Sombras" class="w-16 h-16 mr-4 rounded-full border border-gray-700">
+  <h1 class="text-3xl font-bold">Hail Sombras 💣</h1>
+</div>
+
+<!-- HISTORIA -->
+<div class="mb-6 p-4 bg-gray-900 border border-gray-700 rounded-lg">
+  <h2 class="text-xl font-bold mb-2">📖 Historia</h2>
+  <p class="text-gray-300 text-sm">
+    Hail Sombras se originó en 1989 en el Ibérica de Río y Campos, en un contexto de corrupción generalizada. Inicialmente se dedicaban a robos menores y tráfico de armas, pero con el tiempo diversificaron sus actividades, llegando a trabajar en empresas legales para lavar dinero y consolidar su poder. A lo largo de los años, la banda ha enfrentado conflictos con otras organizaciones, ha pasado por traiciones internas, y ha expandido su influencia tanto en territorios legales como ilegales.  
+    Han logrado sobrevivir y adaptarse a múltiples cambios políticos y sociales, consolidándose como una de las bandas más influyentes de la región. Su historia refleja tanto la crudeza de la vida criminal como la astucia de sus miembros para sobrevivir y prosperar en un entorno hostil.
+  </p>
+</div>
+
+<!-- CHAT -->
+<h2 class="text-2xl font-bold mb-4">💬 Chat</h2>
+<div id="chatBox" class="h-40 overflow-y-auto border border-gray-700 p-2 bg-gray-900 rounded mb-2"></div>
+<div class="flex mb-10">
+  <input id="msgInput" type="text" placeholder="Escribe mensaje..." class="flex-1 p-2 rounded bg-gray-800 border border-gray-700">
+  <button id="sendBtn" class="ml-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded">Enviar</button>
+</div>
+
+<!-- MISIONES -->
+<h2 class="text-2xl font-bold mb-4">📂 Misiones</h2>
+<div id="missionsBox" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getDatabase, ref, onChildAdded, push, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+const { jsPDF } = window.jspdf;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbbODksHMu7HrhrAP3MlBVzhtMn-8sPJQ",
+  authDomain: "bandasibericarp.firebaseapp.com",
+  databaseURL: "https://bandasibericarp-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bandasibericarp",
+  storageBucket: "bandasibericarp.firebasestorage.app",
+  messagingSenderId: "599477975058",
+  appId: "1:599477975058:web:b9faafcd205f27c49240cb",
+  measurementId: "G-J8QJ1SNQFB"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const band = "Hail Sombras";
+const chatBox = document.getElementById("chatBox");
+const msgInput = document.getElementById("msgInput");
+const sendBtn = document.getElementById("sendBtn");
+const missionsBox = document.getElementById("missionsBox");
+
+// --- CHAT ---
+onChildAdded(ref(db, "chats/" + band), snap => {
+  let msg = snap.val();
+  let div = document.createElement("div");
+  div.textContent = msg.sender + ": " + msg.text;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
+sendBtn.addEventListener("click", () => {
+  if (msgInput.value.trim() === "") return;
+  push(ref(db, "chats/" + band), { sender: band, text: msgInput.value });
+  msgInput.value = "";
+});
+
+// --- MISIONES ---
+onChildAdded(ref(db, "missions/" + band), snap => {
+  const mission = snap.val();
+  const key = snap.key;
+
+  let div = document.createElement("div");
+  div.className = "p-4 border border-gray-700 bg-gray-800 rounded-lg shadow flex flex-col justify-between";
+
+  let content = document.createElement("div");
+  content.innerHTML = `<b class="text-lg">${mission.title}</b>
+                       <p class="text-sm text-gray-300">Banda: ${band}</p>
+                       <p class="mt-2">${mission.description}</p>`;
+
+  let btns = document.createElement("div");
+  btns.className = "flex justify-between mt-4";
+
+  let btnPDF = document.createElement("button");
+  btnPDF.textContent = "📄 Ver más";
+  btnPDF.className = "px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded";
+  btnPDF.onclick = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Detalles de la misión", 10, 20);
+    doc.setFontSize(12);
+    doc.text("Título: " + mission.title, 10, 40);
+    doc.text("Banda: " + band, 10, 50);
+    doc.text("Descripción: " + mission.description, 10, 60);
+    doc.text("Detalles: " + mission.details, 10, 70);
+    doc.save(`${mission.title.replace(/\s+/g, "_")}.pdf`);
+  };
+
+  div.appendChild(content);
+  div.appendChild(btnPDF);
+  missionsBox.appendChild(div);
+});
+</script>
+</body>
+</html>
