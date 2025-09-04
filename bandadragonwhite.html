@@ -52,9 +52,22 @@ existió un dragón blanco que nunca dejó de respirar.
 <h2 class="text-2xl font-bold mb-4">📂 Misiones Asignadas</h2>
 <div id="missionsBox" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
+<!-- MODAL COMPLETAR -->
+<div id="modalCompletar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+  <div class="bg-white p-6 rounded-xl shadow-lg w-96">
+    <h3 class="text-xl font-bold mb-4">Completar misión</h3>
+    <input id="pruebaLink" type="text" placeholder="Pega aquí el link de la prueba..." 
+           class="w-full p-2 border border-gray-400 rounded mb-4">
+    <div class="flex justify-end space-x-2">
+      <button id="cancelarBtn" class="px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded text-white">Cancelar</button>
+      <button id="confirmarBtn" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getDatabase, ref, onChildAdded, push } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+import { getDatabase, ref, onChildAdded, push, set, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 
 const { jsPDF } = window.jspdf;
 
@@ -84,21 +97,77 @@ function showMessage(container, msg) {
   container.scrollTop = container.scrollHeight;
 }
 
-// Escuchar mensajes solo de Dragon White
 onChildAdded(ref(db, "chats/Dragon White"), snap => showMessage(chatDragon, snap.val()));
 
-// Enviar mensaje como banda
 sendDragon.addEventListener("click", () => {
   if (msgDragon.value.trim() === "") return;
   push(ref(db, "chats/Dragon White"), { sender: "Dragon White 🤍", text: msgDragon.value });
   msgDragon.value = "";
 });
 
-// MISIÓNES (solo lectura, sin botón de completar)
+// MISIÓNES
 const missionsBox = document.getElementById("missionsBox");
+
+let selectedMission = null;
+const modal = document.getElementById("modalCompletar");
+const pruebaLink = document.getElementById("pruebaLink");
+const cancelarBtn = document.getElementById("cancelarBtn");
+const confirmarBtn = document.getElementById("confirmarBtn");
+
+// Abrir modal
+function openModal(mission, key) {
+  selectedMission = { ...mission, key };
+  pruebaLink.value = "";
+  modal.classList.remove("hidden");
+}
+// Cerrar modal
+function closeModal() {
+  modal.classList.add("hidden");
+  selectedMission = null;
+}
+cancelarBtn.onclick = closeModal;
+
+// Confirmar envío
+confirmarBtn.onclick = async () => {
+  if (!selectedMission) return;
+  const pruebas = pruebaLink.value.trim();
+  if (!pruebas) return alert("Debes introducir un link de pruebas.");
+
+  // Enviar embed a Discord
+  const webhookURL = "https://discord.com/api/webhooks/1413100905150283777/6h6x-7R24OZ1LR5qbaheZaW1KUxqA-7WJxAVbjPSdLyRNkI_MbNyTNpKNkG-eS66rxlN";
+  const embed = {
+    title: "📋 Misión completada (pendiente de confirmación)",
+    color: 3447003,
+    fields: [
+      { name: "Banda", value: "Dragon White 🤍" },
+      { name: "Título", value: selectedMission.title },
+      { name: "Descripción", value: selectedMission.description },
+      { name: "Detalles", value: selectedMission.details },
+      { name: "Fecha Impuesta", value: selectedMission.createdAt ? new Date(selectedMission.createdAt).toLocaleString() : "N/A" },
+      { name: "Fecha Completada", value: new Date().toLocaleString() },
+      { name: "Pruebas", value: pruebas }
+    ]
+  };
+
+  await fetch(webhookURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ embeds: [embed] })
+  });
+
+  // Marcar en Firebase como "pendiente de confirmación"
+  await update(ref(db, `missions/Dragon White/${selectedMission.key}`), {
+    status: "pendiente",
+    prueba: pruebas,
+    completedAt: new Date().toISOString()
+  });
+
+  closeModal();
+};
 
 onChildAdded(ref(db, "missions/Dragon White"), snap => {
   const mission = snap.val();
+  const key = snap.key;
 
   let div = document.createElement("div");
   div.className = "p-4 border border-gray-400 bg-gray-100 rounded-lg shadow flex flex-col justify-between";
@@ -107,7 +176,8 @@ onChildAdded(ref(db, "missions/Dragon White"), snap => {
   content.innerHTML = `<b class="text-lg text-gray-900">${mission.title}</b>
                        <p class="text-sm text-gray-600">Banda: Dragon White 🤍</p>
                        <p class="mt-2 text-gray-800">${mission.description}</p>
-                       <p class="mt-2 text-gray-600 italic">${mission.details}</p>`;
+                       <p class="mt-2 text-gray-600 italic">${mission.details}</p>
+                       <p class="mt-2 text-gray-500">📅 Fecha impuesta: ${mission.createdAt ? new Date(mission.createdAt).toLocaleString() : "N/A"}</p>`;
 
   let btnPDF = document.createElement("button");
   btnPDF.textContent = "📄 Ver más";
@@ -115,16 +185,17 @@ onChildAdded(ref(db, "missions/Dragon White"), snap => {
   btnPDF.onclick = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text("📋 Detalles de la misión", 10, 20);
+    doc.text("Detalles de la misión", 10, 20);
     doc.setFontSize(12);
 
     const titleLines = doc.splitTextToSize("Título: " + mission.title, 180);
-    const bandLines = doc.splitTextToSize("Banda: Dragon White 🤍", 180);
+    const bandLines = doc.splitTextToSize("Banda: Dragon White", 180);
     const descLines = doc.splitTextToSize("Descripción: " + mission.description, 180);
     const detailsLines = doc.splitTextToSize("Detalles: " + mission.details, 180);
+    const dateLines = doc.splitTextToSize("Fecha impuesta: " + (mission.createdAt ? new Date(mission.createdAt).toLocaleString() : "N/A"), 180);
 
     let y = 40;
-    [titleLines, bandLines, descLines, detailsLines].forEach(lines => {
+    [titleLines, bandLines, descLines, detailsLines, dateLines].forEach(lines => {
       doc.text(lines, 10, y);
       y += lines.length * 6;
     });
@@ -132,8 +203,14 @@ onChildAdded(ref(db, "missions/Dragon White"), snap => {
     doc.save(`${mission.title.replace(/\s+/g, "_")}.pdf`);
   };
 
+  let btnCompletar = document.createElement("button");
+  btnCompletar.textContent = "✅ Completar";
+  btnCompletar.className = "px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white mt-2";
+  btnCompletar.onclick = () => openModal(mission, key);
+
   div.appendChild(content);
   div.appendChild(btnPDF);
+  div.appendChild(btnCompletar);
   missionsBox.appendChild(div);
 });
 </script>
