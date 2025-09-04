@@ -47,9 +47,12 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, remove, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 
 const { jsPDF } = window.jspdf;
+
+// ⚡ Webhook de Discord
+const webhookURL = "https://discord.com/api/webhooks/1413100905150283777/6h6x-7R24OZ1LR5qbaheZaW1KUxqA-7WJxAVbjPSdLyRNkI_MbNyTNpKNkG-eS66rxlN";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAbbODksHMu7HrhrAP3MlBVzhtMn-8sPJQ",
@@ -103,11 +106,34 @@ document.getElementById("missionForm").addEventListener("submit", e => {
   const mission = {
     title: document.getElementById("title").value,
     description: document.getElementById("description").value,
-    details: document.getElementById("details").value
+    details: document.getElementById("details").value,
+    status: "activa" // guardamos estado inicial
   };
   push(ref(db, "missions/" + band), mission);
   e.target.reset();
 });
+
+function sendWebhook(title, color, mission, band, status) {
+  fetch(webhookURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      embeds: [
+        {
+          title: title,
+          color: color,
+          fields: [
+            { name: "Banda", value: band },
+            { name: "Título", value: mission.title },
+            { name: "Descripción", value: mission.description },
+            { name: "Detalles", value: mission.details || "N/A" },
+            { name: status, value: new Date().toLocaleString() }
+          ]
+        }
+      ]
+    })
+  });
+}
 
 function loadMissions(band) {
   onChildAdded(ref(db, "missions/" + band), snap => {
@@ -118,10 +144,14 @@ function loadMissions(band) {
     div.className = "p-4 border border-gray-700 bg-gray-900 rounded-lg shadow flex flex-col justify-between";
 
     let content = document.createElement("div");
-    content.innerHTML = `<b class="text-lg text-white">${mission.title}</b>
-                         <p class="text-sm text-gray-300">Banda: ${band}</p>
-                         <p class="mt-2 text-gray-300">${mission.description}</p>
-                         <p class="mt-2 text-gray-400 italic">${mission.details}</p>`;
+    content.innerHTML = `
+      <b class="text-lg text-white">${mission.title}</b>
+      <p class="text-sm text-gray-300">Banda: ${band}</p>
+      <p class="mt-2 text-gray-300">${mission.description}</p>
+      <p class="mt-2 text-gray-400 italic">${mission.details}</p>
+      <p class="mt-2 font-bold ${mission.status === "rechazada" ? "text-red-500" : "text-green-400"}">
+        Estado: ${mission.status || "activa"}
+      </p>`;
 
     let btns = document.createElement("div");
     btns.className = "flex justify-between mt-4";
@@ -150,17 +180,30 @@ function loadMissions(band) {
       doc.save(`${mission.title.replace(/\s+/g, "_")}.pdf`);
     };
 
-    // Borrar misión
-    let btnDelete = document.createElement("button");
-    btnDelete.textContent = "✅ Completar";
-    btnDelete.className = "px-3 py-1 bg-red-600 hover:bg-red-700 rounded";
-    btnDelete.onclick = () => {
+    // ✅ Aceptar misión
+    let btnAccept = document.createElement("button");
+    btnAccept.textContent = "✅ Aceptar";
+    btnAccept.className = "px-3 py-1 bg-green-600 hover:bg-green-700 rounded";
+    btnAccept.onclick = () => {
+      sendWebhook("✅ Misión aceptada", 5763719, mission, band, "Fecha Aceptada");
       remove(ref(db, "missions/" + band + "/" + key));
       div.remove();
     };
 
+    // ❌ Rechazar misión
+    let btnReject = document.createElement("button");
+    btnReject.textContent = "❌ Rechazar";
+    btnReject.className = "px-3 py-1 bg-red-600 hover:bg-red-700 rounded";
+    btnReject.onclick = () => {
+      sendWebhook("❌ Misión rechazada", 15548997, mission, band, "Fecha Rechazo");
+      update(ref(db, "missions/" + band + "/" + key), { status: "rechazada" });
+      div.querySelector("p.font-bold").textContent = "Estado: rechazada";
+      div.querySelector("p.font-bold").className = "mt-2 font-bold text-red-500";
+    };
+
     btns.appendChild(btnPDF);
-    btns.appendChild(btnDelete);
+    btns.appendChild(btnAccept);
+    btns.appendChild(btnReject);
 
     div.appendChild(content);
     div.appendChild(btns);
