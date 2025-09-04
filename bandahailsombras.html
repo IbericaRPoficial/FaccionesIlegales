@@ -8,22 +8,20 @@
 </head>
 <body class="bg-black text-white font-mono p-6">
 
-<!-- CABECERA -->
 <div class="flex items-center mb-6">
   <img src="logohailsombras.png" alt="Logo Hail Sombras" class="w-16 h-16 mr-4 rounded-full border border-gray-700">
-  <h1 class="text-3xl font-bold">Hail Sombras 💣</h1>
+  <h1 class="text-3xl font-bold">🕶️ Hail Sombras 💣</h1>
 </div>
 
-<!-- HISTORIA -->
 <div class="mb-6 p-4 bg-gray-900 border border-gray-700 rounded-lg">
   <h2 class="text-xl font-bold mb-2">📖 Historia</h2>
   <p class="text-gray-300 text-sm">
-    Hail Sombras se originó en 1989 en el Ibérica de Río y Campos, en un contexto de corrupción generalizada. Inicialmente se dedicaban a robos menores y tráfico de armas, pero con el tiempo diversificaron sus actividades, llegando a trabajar en empresas legales para lavar dinero y consolidar su poder. A lo largo de los años, la banda ha enfrentado conflictos con otras organizaciones, ha pasado por traiciones internas, y ha expandido su influencia tanto en territorios legales como ilegales.  
-    Han logrado sobrevivir y adaptarse a múltiples cambios políticos y sociales, consolidándose como una de las bandas más influyentes de la región. Su historia refleja tanto la crudeza de la vida criminal como la astucia de sus miembros para sobrevivir y prosperar en un entorno hostil.
+   Hail Sombras nació en 1989, en un tiempo de corrupción en el Ibérica de Río y Campos. Comenzaron dedicándose a robos menores y tráfico de armas, pero con el tiempo aprendieron a adaptarse: a veces trabajaban en empresas legales para ganar dinero limpio, siempre combinando ingenio y astucia para sobrevivir en un mundo hostil.
+
+A lo largo de los años enfrentaron conflictos, traiciones y desafíos constantes, pero supieron mantenerse unidos y estratégicos. Hoy, Hail Sombras es más que una banda: es una historia de supervivencia y astucia, moviéndose siempre entre las sombras y la luz, dejando su marca en cada lugar que pisan.
   </p>
 </div>
 
-<!-- CHAT -->
 <h2 class="text-2xl font-bold mb-4">💬 Chat</h2>
 <div id="chatBox" class="h-40 overflow-y-auto border border-gray-700 p-2 bg-gray-900 rounded mb-2"></div>
 <div class="flex mb-10">
@@ -31,14 +29,25 @@
   <button id="sendBtn" class="ml-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded">Enviar</button>
 </div>
 
-<!-- MISIONES -->
 <h2 class="text-2xl font-bold mb-4">📂 Misiones</h2>
 <div id="missionsBox" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
+<!-- MODAL COMPLETAR -->
+<div id="modalCompletar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+  <div class="bg-gray-800 p-6 rounded-xl shadow-lg w-96 text-white">
+    <h3 class="text-xl font-bold mb-4">Completar misión</h3>
+    <input id="pruebaLink" type="text" placeholder="Pega aquí el link de la prueba..." 
+           class="w-full p-2 border border-gray-700 rounded mb-4 bg-gray-900 text-white">
+    <div class="flex justify-end space-x-2">
+      <button id="cancelarBtn" class="px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded">Cancelar</button>
+      <button id="confirmarBtn" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getDatabase, ref, onChildAdded, push, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
-
+import { getDatabase, ref, onChildAdded, push, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 const { jsPDF } = window.jspdf;
 
 const firebaseConfig = {
@@ -61,54 +70,114 @@ const msgInput = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
 const missionsBox = document.getElementById("missionsBox");
 
+let selectedMission = null;
+const modal = document.getElementById("modalCompletar");
+const pruebaLink = document.getElementById("pruebaLink");
+const cancelarBtn = document.getElementById("cancelarBtn");
+const confirmarBtn = document.getElementById("confirmarBtn");
+
 // --- CHAT ---
 onChildAdded(ref(db, "chats/" + band), snap => {
-  let msg = snap.val();
-  let div = document.createElement("div");
+  const msg = snap.val();
+  const div = document.createElement("div");
   div.textContent = msg.sender + ": " + msg.text;
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 });
 
 sendBtn.addEventListener("click", () => {
-  if (msgInput.value.trim() === "") return;
+  if (!msgInput.value.trim()) return;
   push(ref(db, "chats/" + band), { sender: band, text: msgInput.value });
   msgInput.value = "";
 });
 
 // --- MISIONES ---
+function openModal(mission, key) {
+  selectedMission = { ...mission, key };
+  pruebaLink.value = "";
+  modal.classList.remove("hidden");
+}
+function closeModal() {
+  modal.classList.add("hidden");
+  selectedMission = null;
+}
+cancelarBtn.onclick = closeModal;
+
+confirmarBtn.onclick = async () => {
+  if (!selectedMission) return;
+  const pruebas = pruebaLink.value.trim();
+  if (!pruebas) return alert("Debes introducir un link de pruebas.");
+
+  const webhookPendiente = "https://discord.com/api/webhooks/1413100905150283777/6h6x-7R24OZ1LR5qbaheZaW1KUxqA-7WJxAVbjPSdLyRNkI_MbNyTNpKNkG-eS66rxlN";
+
+  const embed = {
+    title: "📋 Misión completada (pendiente de confirmación)",
+    color: 3447003,
+    fields: [
+      { name: "Banda", value: band },
+      { name: "Título", value: selectedMission.title },
+      { name: "Descripción", value: selectedMission.description },
+      { name: "Detalles", value: selectedMission.details || "N/A" },
+      { name: "Fecha Impuesta", value: selectedMission.createdAt ? new Date(selectedMission.createdAt).toLocaleString() : "N/A" },
+      { name: "Fecha Completada", value: new Date().toLocaleString() },
+      { name: "Pruebas", value: pruebas }
+    ]
+  };
+
+  await fetch(webhookPendiente, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ embeds: [embed] })
+  });
+
+  await update(ref(db, `missions/${band}/${selectedMission.key}`), {
+    status: "pendiente",
+    prueba: pruebas,
+    completedAt: new Date().toISOString()
+  });
+
+  closeModal();
+};
+
 onChildAdded(ref(db, "missions/" + band), snap => {
   const mission = snap.val();
   const key = snap.key;
 
-  let div = document.createElement("div");
+  const div = document.createElement("div");
   div.className = "p-4 border border-gray-700 bg-gray-800 rounded-lg shadow flex flex-col justify-between";
 
-  let content = document.createElement("div");
+  const content = document.createElement("div");
   content.innerHTML = `<b class="text-lg">${mission.title}</b>
                        <p class="text-sm text-gray-300">Banda: ${band}</p>
-                       <p class="mt-2">${mission.description}</p>`;
+                       <p class="mt-2">${mission.description}</p>
+                       <p class="mt-2 text-gray-400 italic">${mission.details || ""}</p>`;
 
-  let btns = document.createElement("div");
-  btns.className = "flex justify-between mt-4";
-
-  let btnPDF = document.createElement("button");
+  // PDF
+  const btnPDF = document.createElement("button");
   btnPDF.textContent = "📄 Ver más";
-  btnPDF.className = "px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded";
+  btnPDF.className = "mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded";
   btnPDF.onclick = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text("Detalles de la misión", 10, 20);
     doc.setFontSize(12);
-    doc.text("Título: " + mission.title, 10, 40);
-    doc.text("Banda: " + band, 10, 50);
-    doc.text("Descripción: " + mission.description, 10, 60);
-    doc.text("Detalles: " + mission.details, 10, 70);
-    doc.save(`${mission.title.replace(/\s+/g, "_")}.pdf`);
+    const descLines = doc.splitTextToSize("Descripción: " + mission.description, 180);
+    const detailsLines = doc.splitTextToSize("Detalles: " + (mission.details || ""), 180);
+    doc.text(descLines, 10, 40);
+    doc.text(detailsLines, 10, 50 + descLines.length * 6);
+    doc.save(`${mission.title.replace(/\s+/g,"_")}.pdf`);
   };
+
+  // Completar
+  const btnCompletar = document.createElement("button");
+  btnCompletar.textContent = "✅ Completar";
+  btnCompletar.className = "mt-2 px-3 py-1 bg-green-600 hover:bg-green-700 rounded";
+  btnCompletar.onclick = () => openModal(mission, key);
 
   div.appendChild(content);
   div.appendChild(btnPDF);
+  div.appendChild(btnCompletar);
+
   missionsBox.appendChild(div);
 });
 </script>
