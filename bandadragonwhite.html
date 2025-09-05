@@ -85,6 +85,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// SONIDO DE NOTIFICACIÓN
+const notificationSound = new Audio("notificacion.mp3");
+
 // CHAT
 const chatDragon = document.getElementById("chatDragon");
 const msgDragon = document.getElementById("msgDragon");
@@ -95,6 +98,10 @@ function showMessage(container, msg) {
   div.textContent = msg.sender + ": " + msg.text;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+
+  // Sonido al recibir mensaje
+  notificationSound.currentTime = 0;
+  notificationSound.play().catch(() => {});
 }
 
 onChildAdded(ref(db, "chats/Dragon White"), snap => showMessage(chatDragon, snap.val()));
